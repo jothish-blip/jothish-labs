@@ -22,8 +22,8 @@ export default function Hero() {
       const prevX = parseFloat(container.style.getPropertyValue("--x") || "0");
       const prevY = parseFloat(container.style.getPropertyValue("--y") || "0");
 
-      const nextX = prevX + (currentX - prevX) * 0.1;
-      const nextY = prevY + (currentY - prevY) * 0.1;
+      const nextX = prevX + (currentX - prevX) * 0.08;
+      const nextY = prevY + (currentY - prevY) * 0.08;
 
       container.style.setProperty("--x", `${nextX}px`);
       container.style.setProperty("--y", `${nextY}px`);
@@ -40,107 +40,122 @@ export default function Hero() {
   return (
     <div
       ref={containerRef}
-      className="relative min-h-[100svh] w-full bg-[#0a0a0a] text-white overflow-hidden flex flex-col justify-center pt-24 md:pt-28"
+      className="relative min-h-screen w-full bg-[#020202] text-white overflow-hidden flex flex-col items-center justify-center pt-20 md:pt-28" 
     >
-      {/* Texture Layer */}
-      <div 
-        className="absolute inset-0 z-[1] opacity-[0.04] pointer-events-none mix-blend-screen" 
-        style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/carbon-fibre.png')` }}
-      />
+      {/* HUD Layer: Cyber Grid */}
+      <div className="absolute inset-0 z-[1] opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#00ffff_1px,transparent_1px),linear-gradient(to_bottom,#00ffff_1px,transparent_1px)] bg-[size:60px_60px]" />
 
-      {/* Cyber Grid */}
-      <div className="absolute inset-0 z-[2] opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#00ffff_1px,transparent_1px),linear-gradient(to_bottom,#00ffff_1px,transparent_1px)] bg-[size:50px_50px]" />
-
-      {/* Defence Field */}
+      {/* Reactive Defence Field */}
       <div
-        className="pointer-events-none absolute inset-0 z-[3]"
+        className="pointer-events-none absolute inset-0 z-[2]"
         style={{
-          background: `
-            radial-gradient(
-              600px circle at var(--x, -1000px) var(--y, -1000px),
-              rgba(0, 255, 255, 0.12),
-              rgba(0, 255, 255, 0.05) 30%,
-              transparent 70%
-            )
-          `,
+          background: `radial-gradient(600px circle at var(--x, -1000px) var(--y, -1000px), rgba(0, 255, 255, 0.08), transparent 70%)`,
         }}
       />
 
-      {/* Core Glow */}
-      <div
-        className="pointer-events-none absolute w-[140px] h-[140px] bg-cyan-400/40 blur-[60px] z-[4]"
-        style={{
-          left: "calc(var(--x, -1000px) - 70px)",
-          top: "calc(var(--y, -1000px) - 70px)",
-          opacity: isMounted ? 1 : 0,
-        }}
-      />
+      {/* Vertical Scanline Overlay */}
+      <div className="absolute inset-0 z-[3] pointer-events-none opacity-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.01),rgba(0,255,0,0.005),rgba(0,0,255,0.01))] bg-[length:100%_2px,3px_100%]" />
 
-      {/* Scan Line */}
-      <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
-        <div className="w-full h-[1px] bg-cyan-500/20 shadow-[0_0_15px_rgba(0,255,255,0.5)] animate-scan"></div>
-      </div>
+      {/* MAIN CONTENT AREA */}
+      <div className="relative z-10 px-6 md:px-16 lg:px-32 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full max-w-7xl">
+        
+        {/* Left Column: Mission Statement */}
+        <div className={`lg:col-span-8 transition-all duration-1000 delay-300 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="h-[1px] w-12 bg-cyan-500/50"></div>
+            <p className="font-mono text-[10px] tracking-[0.6em] text-cyan-400 uppercase">
+              // TERMINAL_ACCESS_GRANTED
+            </p>
+          </div>
 
-      {/* CONTENT */}
-      <div className="relative z-10 px-6 md:px-16 lg:px-32">
-        <div className={`transition-all duration-1000 ${isMounted ? "opacity-100" : "opacity-0"}`}>
-
-          {/* System Label */}
-          <p className="font-mono text-[10px] tracking-[0.8em] text-cyan-400 mb-6 drop-shadow-[0_0_8px_rgba(0,255,255,0.4)]">
-            // ROLE: SECURITY_ANALYST_ACTIVE
-          </p>
-
-          {/* Heading */}
-          <h1 className="text-6xl md:text-[100px] font-black tracking-tighter leading-[0.8] max-w-5xl">
-            Defending systems <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-500 to-zinc-800">
-              by understanding how they break.
-            </span>
+          <h1 className="text-5xl md:text-[100px] font-black tracking-tighter leading-[0.85] mb-8">
+            Defending <span className="text-zinc-800 italic">Systems</span> <br />
+            By <span className="text-cyan-500 underline decoration-1 underline-offset-8">Breaking</span> Rules.
           </h1>
 
-          {/* Description */}
-          <p className="mt-10 text-zinc-400 max-w-lg text-lg font-light leading-relaxed border-l border-cyan-500/30 pl-6">
-            I operate as a security analyst focused on identifying vulnerabilities, 
-            analyzing threats, and strengthening infrastructure against real-world attack vectors.
-          </p>
+          <div className="max-w-xl space-y-6">
+            <p className="text-zinc-500 text-lg md:text-xl font-light leading-relaxed border-l border-zinc-800 pl-8">
+              Jothish Gandham — A <span className="text-white">Security Analyst</span> specializing in identifying technical flaws and 
+              strengthening digital infrastructure through <span className="text-zinc-300 italic">rapid adaptation</span> and adversarial logic.
+            </p>
+            
+            <div className="flex flex-wrap gap-3 pl-8">
+              {['Vulnerability Analysis', 'Network Defense', 'Quick Learner'].map((tag) => (
+                <span key={tag} className="text-[9px] font-mono border border-zinc-800 px-3 py-1 rounded-full text-zinc-600 uppercase tracking-widest hover:border-cyan-500/50 hover:text-cyan-400 transition-colors">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
 
-          {/* Actions */}
-          <div className="mt-14 flex items-center gap-10">
-
+          <div className="mt-12 flex items-center gap-8 pl-8">
             <a 
               href="#projects" 
-              className="group relative px-10 py-4 bg-cyan-500 text-black font-bold text-xs tracking-widest uppercase overflow-hidden shadow-[0_0_30px_rgba(0,255,255,0.2)]"
+              className="group relative px-8 py-4 bg-transparent border border-cyan-500/50 text-cyan-400 font-bold text-[10px] tracking-[0.3em] uppercase overflow-hidden transition-all active:scale-95"
             >
-              <span className="relative z-10">View Investigations</span>
-              <div className="absolute inset-0 bg-white translate-x-[-100%] group-hover:translate-x-0 transition-transform duration-300"></div>
+              <span className="relative z-10">Initialize_Audit</span>
+              <div className="absolute inset-0 bg-cyan-500 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300"></div>
             </a>
 
-            <a 
-              href="#contact" 
-              className="font-mono text-[11px] text-zinc-500 hover:text-cyan-400 transition-all flex items-center gap-3"
-            >
-              <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
-              INITIATE_CONTACT
-            </a>
+            <div className="hidden md:flex flex-col font-mono text-[9px] text-zinc-700">
+               <span>LATENCY: 14MS</span>
+               <span>STATUS: SECURE_LINK</span>
+            </div>
+          </div>
+        </div>
 
+        {/* Right Column: Live HUD Data */}
+        <div className={`lg:col-span-4 hidden lg:block transition-all duration-1000 delay-500 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+          <div className="border border-white/5 bg-white/[0.01] backdrop-blur-sm p-8 space-y-8 rounded-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-500 animate-pulse"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            
+            <h4 className="font-mono text-[9px] tracking-[0.4em] text-zinc-500 uppercase border-b border-zinc-900 pb-4">Identity_Matrix</h4>
+            
+            <div className="space-y-4 font-mono text-[10px]">
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-zinc-600">NAME</span>
+                <span className="text-zinc-300">JOTHISH G.</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-zinc-600">ROLE</span>
+                <span className="text-cyan-500 uppercase tracking-tighter">Sec_Analyst</span>
+              </div>
+              <div className="flex justify-between border-b border-white/5 pb-2">
+                <span className="text-zinc-600">ADAPTABILITY</span>
+                <span className="text-zinc-300 text-right">HIGH_ACCEL</span>
+              </div>
+              <div className="pt-4">
+                 <p className="text-zinc-700 leading-relaxed italic">
+                   "Focused on the Google Professional track to master enterprise defense and log forensics."
+                 </p>
+              </div>
+            </div>
+
+            <div className="pt-6 space-y-2">
+               <div className="flex justify-between text-[8px] text-zinc-600 mb-1 font-mono uppercase tracking-widest">
+                 <span>Syncing_DB</span>
+                 <span>85%</span>
+               </div>
+               <div className="h-[1px] w-full bg-zinc-900 overflow-hidden">
+                  <div className="h-full bg-cyan-500 animate-[loading_2s_ease-in-out_infinite]"></div>
+               </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Scan Animation */}
+      {/* Animated Edge Line */}
+      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-800 to-transparent"></div>
+      
       <style jsx>{`
-        @keyframes scan {
-          from { transform: translateY(-100vh); }
-          to { transform: translateY(100vh); }
-        }
-        .animate-scan {
-          animation: scan 8s linear infinite;
+        @keyframes loading {
+          0% { transform: translateX(-100%); }
+          50% { transform: translateX(0); }
+          100% { transform: translateX(100%); }
         }
       `}</style>
-
-      {/* Edge Lines */}
-      <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent"></div>
-      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-white/[0.05]"></div>
     </div>
   );
 }

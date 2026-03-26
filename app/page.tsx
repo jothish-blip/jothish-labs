@@ -8,49 +8,51 @@ import Navbar from "@/components/ui/Navbar";
 
 export default function Home() {
   return (
-    <main className="bg-black text-white overflow-x-hidden scroll-smooth">
+    <main className="bg-[#020202] text-white overflow-x-hidden scroll-smooth selection:bg-cyan-500/30">
       
+      {/* Fixed Navbar handles its own z-index */}
       <Navbar />
 
-      {/* Hero Section */}
-      <section id="hero" className="h-screen w-full relative">
+      {/* HERO SECTION 
+          Using min-h-screen instead of h-screen prevents content 
+          from collapsing on smaller mobile devices.
+      */}
+      <div id="hero" className="relative min-h-screen w-full border-b border-white/[0.02]">
         <Hero />
-      </section>
+      </div>
 
-      {/* About Section */}
-      <section id="about" className="min-h-screen w-full flex items-center">
-        <div className="max-w-6xl mx-auto px-6 w-full">
-          <About />
-        </div>
-      </section>
+      {/* CONTENT SECTIONS
+          We remove the extra <div> wrappers and flex-center logic here
+          because your individual components (About, Projects, etc.) 
+          already handle their own internal spacing and centering.
+      */}
+      
+      <div id="about" className="relative">
+        <About />
+      </div>
 
-      {/* Projects Section */}
-      <section id="projects" className="min-h-screen w-full flex items-center">
-        <div className="max-w-6xl mx-auto px-6 w-full">
-          <Projects />
-        </div>
-      </section>
+      <div id="projects" className="relative">
+        <Projects />
+      </div>
 
-      {/* Skills Section */}
-      <section id="skills" className="min-h-screen w-full flex items-center">
-        <div className="max-w-6xl mx-auto px-6 w-full">
-          <Skills />
-        </div>
-      </section>
+      <div id="skills" className="relative">
+        <Skills />
+      </div>
 
-      {/* Terminal Section */}
-      <section id="terminal" className="min-h-screen w-full flex items-center">
-        <div className="max-w-6xl mx-auto px-6 w-full">
-          <Terminal />
-        </div>
-      </section>
+      <div id="terminal" className="relative">
+        <Terminal />
+      </div>
 
-      {/* Contact Section */}
-      <section id="contact" className="min-h-screen w-full flex items-center">
-        <div className="max-w-6xl mx-auto px-6 w-full">
-          <Contact />
-        </div>
-      </section>
+      <div id="contact" className="relative">
+        <Contact />
+      </div>
+
+      {/* Optional: Subtle global footer or bottom spacer */}
+      <footer className="py-10 bg-[#020202] border-t border-white/[0.02] text-center">
+        <p className="font-mono text-[8px] text-zinc-800 uppercase tracking-[0.5em]">
+          End of Dossier // Data Secure
+        </p>
+      </footer>
 
     </main>
   );
