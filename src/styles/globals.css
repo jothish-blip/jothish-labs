@@ -49,3 +49,4 @@
   50% { clip-path: inset(60% 0 10% 0); transform: translate(-2px, -2px); }
   100% { clip-path: inset(80% 0 0 0); transform: translate(2px, 2px); }
 }
+
