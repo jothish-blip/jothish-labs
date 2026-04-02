@@ -19,6 +19,18 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // Lock background scroll when mobile menu is open
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [menuOpen]);
+
   useEffect(() => {
     const handleScroll = () => {
       // 1. Progress Calculation
@@ -53,7 +65,7 @@ export default function Navbar() {
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: "smooth" });
-      setMenuOpen(false);
+      setMenuOpen(false); // Auto-close mobile menu
     }
   };
 
@@ -77,12 +89,12 @@ export default function Navbar() {
         <a
           href="#"
           onClick={(e) => smoothScroll(e, "hero")}
-          className="group flex flex-col font-mono"
+          className="group flex flex-col font-mono relative z-[101]"
         >
           <div className="flex items-center gap-2">
              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
              <span className="text-[12px] font-black tracking-[0.2em] text-white uppercase">
-                JG_ANALYST_CORE
+               JG_ANALYST_CORE
              </span>
           </div>
           <span className="text-[9px] text-zinc-600 tracking-widest font-light ml-3.5 uppercase">
@@ -129,31 +141,41 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* MOBILE TOGGLE */}
+        {/* MAIN HAMBURGER BUTTON (Visible when menu is closed) */}
         <button
-          className="md:hidden flex flex-col gap-1.5 p-2 group bg-white/5 rounded"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle Menu"
+          className={`md:hidden flex flex-col gap-1.5 p-3 group bg-white/5 rounded-sm border border-white/10 relative z-[101] transition-opacity ${menuOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+          onClick={() => setMenuOpen(true)}
+          aria-label="Open Menu"
         >
-          <div className={`h-[1px] w-5 bg-white transition-all ${menuOpen ? "rotate-45 translate-y-2" : ""}`}></div>
-          <div className={`h-[1px] w-3 bg-white transition-all ml-auto ${menuOpen ? "opacity-0" : ""}`}></div>
-          <div className={`h-[1px] w-5 bg-white transition-all ${menuOpen ? "-rotate-45 -translate-y-1.5" : ""}`}></div>
+          <div className="h-[1px] w-5 bg-white"></div>
+          <div className="h-[1px] w-3 bg-white ml-auto"></div>
+          <div className="h-[1px] w-5 bg-white"></div>
         </button>
       </div>
 
-      {/* MOBILE DROPDOWN */}
+      {/* MOBILE DROPDOWN (FULL SCREEN OVERLAY) */}
       <div 
-        className={`fixed inset-0 top-0 bg-black/98 backdrop-blur-3xl transition-all duration-500 md:hidden z-[99] ${
-          menuOpen ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        className={`fixed inset-0 w-full h-[100dvh] bg-black/85 backdrop-blur-xl border-b border-white/10 transition-all duration-500 ease-in-out md:hidden z-[110] ${
+          menuOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-full opacity-0 pointer-events-none"
         }`}
       >
-        <div className="flex flex-col p-12 h-full">
-          <div className="mb-12 border-b border-white/5 pb-6">
+        {/* DEDICATED CLOSE BUTTON */}
+        <button 
+          onClick={() => setMenuOpen(false)}
+          className="absolute top-6 right-6 p-4 bg-white/5 border border-white/10 rounded-sm text-zinc-400 hover:text-white hover:bg-white/10 transition-all active:scale-95"
+          aria-label="Close Menu"
+        >
+          <div className="w-5 h-[1px] bg-current rotate-45 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="w-5 h-[1px] bg-current -rotate-45 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+        </button>
+
+        <div className="flex flex-col p-8 pt-24 h-full overflow-y-auto">
+          <div className="mb-10 border-b border-white/5 pb-6">
             <p className="font-mono text-[10px] text-cyan-500 tracking-[0.5em] uppercase mb-2">// Select_Destination_Node</p>
             <h3 className="text-xs font-mono text-zinc-500 uppercase">Navigation_Core.v2.5</h3>
           </div>
 
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-8 sm:gap-10">
             {sections.map((sec, idx) => (
               <a
                 key={sec}
@@ -161,20 +183,20 @@ export default function Navbar() {
                 onClick={(e) => smoothScroll(e, sec)}
                 className="group flex items-center gap-6"
               >
-                <span className={`font-mono text-xs ${active === sec ? sectionConfig[sec].color : "text-zinc-800"}`}>
+                <span className={`font-mono text-xs ${active === sec ? sectionConfig[sec].color : "text-zinc-600 group-hover:text-zinc-400"}`}>
                    0{idx + 1}
                 </span>
-                <span className={`text-5xl font-black tracking-tighter uppercase transition-all duration-300 ${
-                  active === sec ? sectionConfig[sec].color : "text-zinc-800 group-hover:text-zinc-400"
+                <span className={`text-3xl sm:text-4xl font-black tracking-tighter uppercase transition-all duration-300 ${
+                  active === sec ? sectionConfig[sec].color : "text-zinc-400 group-hover:text-white"
                 }`}>
                   {sec}
                 </span>
-                {active === sec && <div className={`w-3 h-3 rounded-full animate-ping ${sectionConfig[sec].color} bg-current opacity-20`}></div>}
+                {active === sec && <div className={`w-2 h-2 rounded-full animate-ping ${sectionConfig[sec].color} bg-current opacity-50`}></div>}
               </a>
             ))}
           </div>
           
-          <div className="mt-auto pt-12 border-t border-white/5 font-mono text-[9px] text-zinc-600 flex justify-between uppercase tracking-widest">
+          <div className="mt-auto pt-10 border-t border-white/5 font-mono text-[9px] text-zinc-600 flex justify-between items-center uppercase tracking-widest">
             <span className="flex items-center gap-2">
                <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></div>
                Link_Secure
