@@ -68,6 +68,34 @@ const caseFiles = [
       { name: "View_Traffic_Log.png", type: "image", url: "/reports/tcpdump-screenshot.png", isPrimary: true },
       { name: "Open_Analysis_Doc.pdf", type: "pdf", url: "/reports/dns-analysis.pdf", isPrimary: false }
     ]
+  },
+  {
+    id: "CASE-LNX03",
+    category: "LINUX_SECURITY",
+    title: "Linux Permissions Hardening",
+    status: "SECURED",
+    riskScore: "7/10",
+    riskLevel: "HIGH",
+    vulnerabilities: 3,
+    controlsFailed: 3,
+    description: "System-wide audit and remediation of Linux file permissions to enforce the Principle of Least Privilege (PoLP).",
+    investigationNotes: "Initial system scan revealed critical directory vulnerabilities where 'Others' and 'Group' had unauthorized write access. Sensitive hidden project files were exposed to the entire user environment. Remediation involved recursive permission stripping and specific owner-only locks.",
+    checklist: [
+      { control: "Permission Audit", status: "YES", note: "Used ls -la to map vulnerabilities" },
+      { control: "Group Write Lock", status: "YES", note: "chmod g-w enforced on project root" },
+      { control: "Others Access Strip", status: "YES", note: "chmod o-w applied to system drafts" },
+      { control: "Hidden File Shield", status: "YES", note: ".project_x.txt restricted to owner" },
+      { control: "Dir Access Control", status: "YES", note: "Restricted drafts directory to 700" },
+    ],
+    recommendations: [
+      "Implement automated cron jobs to audit file permissions weekly.",
+      "Standardize on 755 for public dirs and 700 for private data.",
+      "Audit hidden files (.dotfiles) for SPII leaks.",
+      "Enforce umask settings to prevent insecure default permissions."
+    ],
+    assets: [
+      { name: "Open_Security_Report.pdf", type: "pdf", url: "/linux/project.pdf", isPrimary: true }
+    ]
   }
 ];
 
@@ -88,11 +116,11 @@ export default function Projects() {
     };
   }, [viewerFile]);
 
-  const toggleCase = (id: SetStateAction<string | null>) => {
+  const toggleCase = (id: string) => {
     setOpenCaseId(openCaseId === id ? null : id);
   };
 
-  const openViewer = (file: SetStateAction<Asset | null>, e: MouseEvent<HTMLButtonElement>) => {
+  const openViewer = (file: Asset, e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     setViewerFile(file);
   };
@@ -145,7 +173,9 @@ export default function Projects() {
                     <div className="flex flex-wrap items-center gap-4">
                       <span className="font-mono text-[9px] bg-zinc-900 px-3 py-1 text-zinc-500 border border-white/5 uppercase tracking-widest">REF: {projectCase.id}</span>
                       <span className={`font-mono text-[9px] px-3 py-1 border uppercase tracking-widest ${
-                        projectCase.status === 'CRITICAL_RISK' ? 'bg-red-950/20 text-red-500 border-red-500/30' : 'bg-amber-950/20 text-amber-500 border-amber-500/30'
+                        projectCase.status === 'CRITICAL_RISK' ? 'bg-red-950/20 text-red-500 border-red-500/30' : 
+                        projectCase.status === 'SECURED' ? 'bg-emerald-950/20 text-emerald-500 border-emerald-500/30' :
+                        'bg-amber-950/20 text-amber-500 border-amber-500/30'
                       }`}>
                         {projectCase.status}
                       </span>
@@ -271,10 +301,8 @@ export default function Projects() {
       {viewerFile && (
         <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-0 md:p-8 overflow-hidden">
           
-          {/* Main Modal Box: Scales naturally on Desktop up to 95vh. Full screen on Mobile. */}
           <div className="w-full h-[100dvh] md:h-auto md:max-h-[95vh] md:w-[90vw] md:max-w-5xl bg-[#050505] md:border md:border-white/10 md:rounded-sm shadow-2xl flex flex-col overflow-hidden ring-0 md:ring-1 md:ring-cyan-900/50 relative">
             
-            {/* TOP HEADER - Locked at the top, Title ONLY */}
             <div className="flex-none flex items-center justify-between p-4 md:p-5 border-b border-white/5 bg-[#0a0a0a]">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></div>
@@ -284,10 +312,8 @@ export default function Projects() {
               </div>
             </div>
 
-            {/* SCROLLABLE AREA - Holds the File and the Bottom Buttons. Scroll down to see buttons! */}
             <div className="flex-1 overflow-y-auto bg-[#030303] flex flex-col relative" style={{ WebkitOverflowScrolling: "touch" }}>
               
-              {/* The File Container */}
               <div className="flex-none p-4 md:p-8 flex flex-col items-center justify-center">
                 {viewerFile.type === 'image' ? (
                   <img 
@@ -302,7 +328,6 @@ export default function Projects() {
                       title={viewerFile.name}
                       className="w-full h-full border-none"
                     >
-                      {/* Fallback for browsers without inline PDF viewing */}
                       <div className="flex flex-col items-center justify-center h-full space-y-4 text-center p-4">
                         <p className="font-mono text-zinc-400">Unable to render PDF inline.</p>
                         <a href={viewerFile.url} target="_blank" className="text-cyan-500 underline font-mono text-xs">Download to view</a>
@@ -312,7 +337,6 @@ export default function Projects() {
                 )}
               </div>
 
-              {/* BOTTOM CONTROLS - Universal for Mobile & Desktop. You scroll down to reach these! */}
               <div className="flex-none border-t border-white/5 bg-[#080808] p-4 sm:p-8 flex flex-row justify-end gap-4 mt-auto">
                 <button 
                   onClick={closeViewer}
