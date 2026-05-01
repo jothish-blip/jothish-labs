@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   description:
     "Security-focused portfolio of Jothish Gandham showcasing systems, skills, and projects.",
   icons: {
-    icon: "/favicon.ico",
+      icon: "/favicon-v2.ico",
   },
 };
 
