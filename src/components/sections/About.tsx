@@ -68,7 +68,7 @@ export default function About() {
       
       <div className="absolute inset-0 z-0 opacity-[0.012] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:70px_70px]"></div>
 
-      <div className={`relative z-10 max-w-7xl mx-auto space-y-24 transition-all duration-1000 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className={`relative z-10 max-w-5xl mx-auto space-y-14 transition-all duration-700 ${isMounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         
         {/* [1] IDENTITY BLOCK - 3 COLUMN LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 items-start">
@@ -76,24 +76,40 @@ export default function About() {
           {/* LEFT: TEXT DATA */}
           <div className="lg:col-span-5 space-y-8 order-2 lg:order-1">
             <div className="space-y-4">
-              <div className="font-mono text-[10px] text-cyan-500 tracking-[0.4em] uppercase">// ANALYST_IDENTITY_VERIFIED</div>
+              <p className="text-[10px] font-mono text-zinc-600 tracking-widest mb-4">
+                JOTHISH GANDHAM / SECURITY LEARNER
+              </p>
+              <div className="font-mono text-[10px] text-cyan-500 tracking-[0.4em] uppercase">WHO I AM</div>
               <h2 className="text-6xl lg:text-7xl font-black tracking-tighter uppercase leading-[0.85]">
                 Jothish <span className="text-zinc-600 italic font-light">Gandham</span>
               </h2>
-              <div className="font-mono text-xs text-zinc-400 tracking-tight border-y border-white/5 py-3">
-                Aspiring Security Analyst | <span className="text-cyan-500 font-bold">Blue Team Focus</span>
+              <div className="font-mono text-xs text-zinc-400 tracking-tight border-y border-white/5 py-3 flex items-center justify-between">
+                <span>Aspiring Security Analyst | <span className="text-cyan-500 font-bold">Blue Team Focus</span></span>
               </div>
             </div>
             
             <div className="border-l-2 border-cyan-900 pl-8 space-y-6">
               <p className="text-zinc-400 text-lg font-light leading-relaxed">
-                B.Tech undergraduate at <span className="text-white font-medium">Sandip University</span> with hands-on experience in 
-                Linux, networking fundamentals, and security analysis. Active learner in threat detection and incident response workflows.
+                I didn’t start with everything figured out. I started by trying to understand what really happens when systems break.
+              </p>
+
+              <div className="w-12 h-px bg-zinc-800"></div>
+              
+              <p className="text-zinc-500 text-sm leading-relaxed">
+                That curiosity pulled me into exploring network traffic, logs, and simple attack scenarios — not just reading about them, but trying them out and seeing what really happens.
+              </p>
+              
+              <p className="text-zinc-500 text-sm leading-relaxed">
+                Right now, I’m building that foundation step by step. Learning tools like Wireshark, Linux, and SQL, and slowly understanding how detection and response works in real environments.
+              </p>
+
+              <p className="text-zinc-600 text-xs font-mono pt-2">
+                I’m not trying to know everything — I’m trying to understand things deeply.
               </p>
 
               <div className="flex flex-wrap gap-3 pt-2">
-                {["Quick Learner", "Consistent Discipline", "Analytical Mindset", "Builder Mentality"].map((trait) => (
-                  <span key={trait} className="text-[9px] font-mono px-3 py-1 border border-cyan-900/40 text-cyan-500 bg-cyan-950/10 uppercase tracking-widest">
+                {["Break Things to Learn", "Pattern Focused", "Hands-on Practice", "Consistency Over Time"].map((trait) => (
+                  <span key={trait} className="group text-[9px] font-mono px-3 py-1 border border-cyan-900/40 text-cyan-500 bg-cyan-950/10 uppercase tracking-widest cursor-default transition-colors hover:bg-cyan-900/20 hover:text-cyan-400 hover:border-cyan-500/50">
                     {trait}
                   </span>
                 ))}
@@ -109,22 +125,21 @@ export default function About() {
             </div>
           </div>
 
-          {/* CENTER: PROFILE PHOTO (Added as requested) */}
+          {/* CENTER: PROFILE PHOTO */}
           <div className="lg:col-span-3 order-1 lg:order-2">
             <div className="relative group max-w-[280px] mx-auto lg:mx-0">
-                {/* Secure Frame */}
                 <div className="absolute -inset-2 border border-cyan-500/10 opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
                 <div className="relative border border-white/10 p-2 bg-zinc-950/50 backdrop-blur-sm overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-cyan-500/30 animate-scan z-10 pointer-events-none"></div>
                     <img 
                         src="https://i.pinimg.com/1200x/27/74/3e/27743e3a002888b26448f35e0fe41137.jpg" 
                         alt="Jothish Gandham"
-                        className="w-full h-auto object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:brightness-100 transition-all duration-700 ease-in-out border border-white/5"
+                        className="w-full h-auto object-cover md:grayscale md:brightness-75 md:group-hover:grayscale-0 md:group-hover:brightness-100 transition-all duration-700 ease-in-out border border-white/5"
                     />
                 </div>
                 <div className="mt-3 flex justify-between items-center px-1 font-mono text-[8px] text-zinc-600 uppercase tracking-[0.2em]">
                     <span>Asset_01.jpg</span>
-                    <span className="text-cyan-900">Verified_Live</span>
+                    <span className="text-zinc-700">Profile Image</span>
                 </div>
             </div>
           </div>
@@ -132,7 +147,7 @@ export default function About() {
           {/* RIGHT: EDUCATION & STATUS */}
           <div className="lg:col-span-4 space-y-10 order-3 border-l border-zinc-900/50 pl-6 lg:pl-10">
             <div className="space-y-8">
-                <h4 className="font-mono text-[10px] text-cyan-600 uppercase tracking-[0.4em]">// EDUCATION_LOG</h4>
+                <h4 className="font-mono text-[10px] text-cyan-600 uppercase tracking-[0.4em]">EDUCATION</h4>
                 <div className="space-y-6 font-mono text-[11px]">
                 <div className="relative">
                     <span className="absolute -left-[30px] top-1 w-2 h-2 bg-cyan-500 rounded-full"></span>
@@ -151,56 +166,98 @@ export default function About() {
             
             <div className="p-4 bg-white/[0.02] border border-white/5">
                 <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest mb-1">Status:</p>
-                <p className="text-[11px] font-mono text-cyan-500 uppercase tracking-widest font-bold animate-pulse">
+                <p className="text-[11px] font-mono text-cyan-400 uppercase tracking-widest font-bold">
                     Open to Summer 2026 Internships
                 </p>
             </div>
           </div>
         </div>
 
-        {/* [2] TOOLKIT & ANALYSIS CASE */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start py-16 border-y border-zinc-900/50">
-          <div className="lg:col-span-4 space-y-6">
-            <h4 className="font-mono text-[10px] text-zinc-700 uppercase tracking-widest">// CURRENT_PHASE</h4>
-            <ul className="space-y-4 font-mono text-[10px] text-zinc-400">
-              <li className="flex gap-3"><span className="text-cyan-900">01</span> <span>Active Labs: TryHackMe (SOC Level 1)</span></li>
-              <li className="flex gap-3"><span className="text-cyan-900">02</span> <span>SIEM: Exploring Splunk Dashboards</span></li>
-              <li className="flex gap-3"><span className="text-cyan-900">03</span> <span>Tooling: Mastering Wireshark filtering</span></li>
-            </ul>
-          </div>
-
-          <div className="lg:col-span-5 space-y-6">
-            <h4 className="font-mono text-[10px] text-zinc-700 uppercase tracking-widest">// TOOLKIT_STRENGTH</h4>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { name: "Linux", lv: "Int" }, { name: "Wireshark", lv: "Beg" },
-                { name: "SQL", lv: "Int" }, { name: "Python", lv: "Beg" },
-                { name: "Nmap", lv: "Beg" }, { name: "TCP/IP", lv: "Int" }
-              ].map((tool) => (
-                <div key={tool.name} className="p-2 border border-white/5 bg-white/[0.01]">
-                  <p className="text-[9px] text-white font-mono uppercase">{tool.name}</p>
-                  <p className="text-[7px] text-cyan-700 font-mono uppercase tracking-tighter">{tool.lv}</p>
-                </div>
-              ))}
+        {/* [2] CURRENT FOCUS & HOW I'M LEARNING */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start py-12 border-y border-zinc-900/50">
+          
+          <div className="lg:col-span-8 space-y-6">
+            <h4 className="font-mono text-[10px] text-zinc-700 uppercase tracking-widest">
+              // WHAT I’M DOING NOW
+            </h4>
+            <div className="space-y-4">
+              <p className="text-zinc-400 text-sm leading-relaxed max-w-2xl">
+                Right now, I’m focused on building a strong foundation — working with network traffic, system logs, and basic security scenarios.
+              </p>
+              <p className="text-zinc-500 text-sm leading-relaxed max-w-2xl">
+                I spend most of my time experimenting, testing things, and trying to understand why something works — not just how.
+              </p>
+              <p className="text-zinc-600 text-xs font-mono">
+                Most of my learning happens by testing things and observing what changes.
+              </p>
             </div>
           </div>
 
-          <div className="lg:col-span-3 bg-cyan-950/5 border border-cyan-900/20 p-6 rounded-sm">
-             <h4 className="font-mono text-[9px] text-cyan-700 uppercase tracking-widest mb-3">// MOCK_ANALYSIS</h4>
-             <div className="space-y-2 font-mono text-[10px] text-zinc-500 italic">
-                <p className="text-zinc-400 border-b border-white/5 pb-1 italic leading-tight">Scenario: Brute-Force Detection</p>
-                <p>» Identified 50+ failed logins / 2m</p>
-                <p>» Classification: True Positive.</p>
-             </div>
+          <div className="lg:col-span-4 space-y-6">
+            <h4 className="font-mono text-[10px] text-zinc-700 uppercase tracking-widest">
+              // HOW I’M LEARNING
+            </h4>
+            <p className="text-zinc-500 text-[13px] leading-relaxed mb-4 max-w-md">
+              These are the tools I’m using to explore and understand systems in a practical way.
+            </p>
+
+            <div className="space-y-5">
+              <div className="group border-l border-white/5 pl-4 hover:border-cyan-500/50 transition cursor-default">
+                <p className="text-white text-sm font-medium flex items-center">
+                  Linux
+                  <span className="text-[9px] text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-widest">learning</span>
+                </p>
+                <p className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
+                  My base environment — where I practice commands, permissions, and system-level understanding.
+                </p>
+              </div>
+
+              <div className="group border-l border-white/5 pl-4 hover:border-cyan-500/50 transition cursor-default">
+                <p className="text-white text-sm font-medium flex items-center">
+                  Wireshark
+                  <span className="text-[9px] text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-widest">learning</span>
+                </p>
+                <p className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
+                  Used to inspect packet-level data and understand how traffic behaves in real scenarios.
+                </p>
+              </div>
+
+              <div className="group border-l border-white/5 pl-4 hover:border-cyan-500/50 transition cursor-default">
+                <p className="text-white text-sm font-medium flex items-center">
+                  tcpdump
+                  <span className="text-[9px] text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-widest">learning</span>
+                </p>
+                <p className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
+                  Practicing command-line packet capture to observe raw traffic directly.
+                </p>
+              </div>
+
+              <div className="group border-l border-white/5 pl-4 hover:border-cyan-500/50 transition cursor-default">
+                <p className="text-white text-sm font-medium flex items-center">
+                  SQL
+                  <span className="text-[9px] text-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity ml-2 uppercase tracking-widest">learning</span>
+                </p>
+                <p className="text-[11px] text-zinc-500 pt-1 leading-relaxed">
+                  Learning how to filter and analyze data to identify patterns and anomalies.
+                </p>
+              </div>
+            </div>
           </div>
+
         </div>
 
         {/* [3] EVIDENCE VIEWING NODES */}
-        <div className="space-y-12 pb-20 max-w-4xl mx-auto">
+        <div className="space-y-12 pb-16 max-w-3xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
-            <div className="space-y-2 text-center md:text-left">
-              <p className="font-mono text-[10px] tracking-[0.4em] text-cyan-600 uppercase">// EVIDENCE_VERIFICATION</p>
-              <h3 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">Google Cybersecurity Stack</h3>
+            <div className="space-y-3 text-center md:text-left">
+              <p className="font-mono text-[10px] tracking-[0.4em] text-cyan-600 uppercase">CERTIFICATIONS</p>
+              <h3 className="text-2xl md:text-3xl font-bold tracking-tight uppercase">Google Cybersecurity Certificate Path</h3>
+              <p className="text-zinc-500 text-sm max-w-md leading-relaxed">
+                As I learned these concepts, I documented the journey through structured courses and practical exercises. This is the path I’ve taken so far.
+              </p>
+              <p className="text-[10px] text-zinc-600 font-mono hidden md:block pt-2">
+                Scroll to explore • Use arrows to navigate
+              </p>
             </div>
             <div className="flex justify-center gap-3">
               <button onClick={() => { prevCert(); setIsPaused(true); }} className="px-4 py-2 border border-zinc-900 text-zinc-600 hover:text-white hover:border-zinc-400 transition-all font-mono text-[9px] uppercase active:scale-95">Prev</button>
@@ -228,10 +285,10 @@ export default function About() {
             </div>
 
             <div className="bg-zinc-900/50 border-b border-white/5 px-4 py-3 flex items-center justify-between">
-              <span className="font-mono text-[8px] text-zinc-600 tracking-widest uppercase italic">NODE: {certificates[activeCert].id} // DOC_SECURE_VIEW</span>
+              <span className="font-mono text-[8px] text-zinc-600 tracking-widest uppercase italic">NODE: {certificates[activeCert].id}</span>
             </div>
 
-            <div className="relative w-full aspect-[1.414/1] bg-[#080808]">
+            <div className="relative w-full aspect-[4/3] md:aspect-[1.3/1] bg-[#080808]">
               {isMounted && (
                 <iframe
                   key={certificates[activeCert].path}
@@ -247,16 +304,23 @@ export default function About() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div className="space-y-3 text-left">
                         <h4 className="text-sm font-bold text-white uppercase tracking-tight">{certificates[activeCert].title}</h4>
-                        <div className="flex flex-wrap gap-2">
+                        <p className="text-[10px] text-zinc-600 font-mono">
+                          Completed as part of structured learning
+                        </p>
+                        <div className="flex flex-wrap gap-2 pt-1">
                             {certificates[activeCert].skills.split(', ').map((skill, sIdx) => (
                                 <span key={sIdx} className="text-[7px] font-mono px-2 py-0.5 bg-cyan-950/20 text-cyan-600 border border-cyan-900/30 rounded-sm">{skill}</span>
                             ))}
                         </div>
                     </div>
-                    <a href={certificates[activeCert].path} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto text-center px-4 py-2 bg-white/5 hover:bg-cyan-500/20 border border-white/10 text-[9px] font-mono uppercase transition-all whitespace-nowrap">Download_Evidence</a>
+                    <a href={certificates[activeCert].path} target="_blank" rel="noopener noreferrer" className="w-full md:w-auto text-center px-4 py-2 bg-white/5 hover:bg-cyan-500/20 border border-white/10 text-[9px] font-mono uppercase transition-all whitespace-nowrap">View Certificate</a>
                 </div>
             </div>
           </div>
+          
+          <p className="text-[11px] text-zinc-500 text-center font-mono mt-10 tracking-widest uppercase">
+            I’m still at the beginning — but I’m building this every day.
+          </p>
         </div>
       </div>
 

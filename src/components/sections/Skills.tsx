@@ -1,266 +1,419 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Shield, Search, Activity, ExternalLink, Plus, 
-  Target, Zap, Fingerprint, Database, Code 
-} from "lucide-react";
+import { Terminal, Database, Activity, Radio, ChevronRight, Zap, Monitor } from "lucide-react";
 
-// --- CONFIGURATION & TYPES ---
-type Tier = "Practiced" | "Advanced" | "Learning";
-
-interface Tool {
-  id: string;
-  name: string;
-  category: "RECON" | "ANALYSIS" | "DEFENSE" | "DEVELOPMENT";
-  tier: Tier;
-  confidence: number; // 0 to 100
-  desc: string;
-  capabilities: string[];
-  appliedIn: string;
-  impact: string;
-  reportType: string;
-}
-
-const TIER_CONFIG = {
-  Advanced: { color: "text-green-500", border: "border-green-500", bg: "bg-green-500", glow: "shadow-[0_0_15px_rgba(34,197,94,0.3)]", label: "SECURE" },
-  Practiced: { color: "text-orange-500", border: "border-orange-500", bg: "bg-orange-500", glow: "shadow-[0_0_15px_rgba(249,115,22,0.2)]", label: "CAUTION" },
-  Learning: { color: "text-red-500", border: "border-red-500", bg: "bg-red-500", glow: "shadow-[0_0_15px_rgba(239,68,68,0.2)]", label: "RISK" },
-};
-
-const tools: Tool[] = [
-  { 
-    id: "01", name: "Kali Linux", category: "RECON", tier: "Advanced", confidence: 92,
-    desc: "Primary OS for offensive security and forensic environments.",
-    capabilities: ["Kernel Hardening", "Payload Gen"],
-    appliedIn: "OSCP / TryHackMe Labs",
-    impact: "Central hub for 15+ simulated network penetrations.",
-    reportType: "Attack Simulation"
+// --- GROUPED CORE ASSETS ---
+const skillGroups = [
+  {
+    title: "PACKET ANALYSIS",
+    items: [
+      {
+        id: "MOD-WSH",
+        name: "Wireshark",
+        category: "PACKET_ANALYSIS",
+        icon: Activity,
+        color: "text-emerald-400",
+        pulse: "bg-emerald-400",
+        iconBorder: "border-emerald-500/20",
+        capBorder: "border-emerald-500/30",
+        hoverBorder: "border-emerald-500/30",
+        hoverBg: "bg-emerald-950/20",
+        activeBorder: "border-emerald-500/50",
+        activeBg: "bg-[#0c0c0c]",
+        bgGlow: "group-hover:shadow-[0_0_30px_rgba(52,211,153,0.05)]",
+        borderGlow: "group-hover:border-emerald-500/30",
+        status: "LEARNING / IN USE",
+        desc: "Packet inspection and protocol analysis to understand network traffic.",
+        capabilities: ["Packet Filtering", "Protocol Inspection", "Traffic Flow Analysis"],
+        terminalSnippet: "ip.addr == 192.168.1.100 && tcp.port == 443",
+        terminalOutput: "14 packets captured",
+        expandText: "Used in DNS failure analysis to trace UDP requests and identify returning ICMP unreachable errors."
+      },
+      {
+        id: "MOD-TCP",
+        name: "tcpdump",
+        category: "NETWORK_RECON",
+        icon: Radio,
+        color: "text-red-400",
+        pulse: "bg-red-400",
+        iconBorder: "border-red-500/20",
+        capBorder: "border-red-500/30",
+        hoverBorder: "border-red-500/30",
+        hoverBg: "bg-red-950/20",
+        activeBorder: "border-red-500/50",
+        activeBg: "bg-[#0c0c0c]",
+        bgGlow: "group-hover:shadow-[0_0_30px_rgba(248,113,113,0.05)]",
+        borderGlow: "group-hover:border-red-500/30",
+        status: "LEARNING / IN USE",
+        desc: "CLI network traffic capture for lightweight logging and live monitoring.",
+        capabilities: ["Packet Capture", "Traffic Inspection", "Headless Monitoring"],
+        terminalSnippet: "tcpdump -i eth0 -n",
+        terminalOutput: "listening on eth0, link-type EN10MB",
+        expandText: "Deployed to capture raw packet data from terminal environments for rapid network troubleshooting."
+      }
+    ]
   },
-  { 
-    id: "02", name: "Nmap", category: "RECON", tier: "Advanced", confidence: 88,
-    desc: "Network discovery and security auditing via NSE.",
-    capabilities: ["NSE Scripting", "OS Fingerprinting"],
-    appliedIn: "Internal Recon Simulation",
-    impact: "Mapped 200+ nodes and identified critical misconfigurations.",
-    reportType: "Audit Report"
+  {
+    title: "OPERATING SYSTEM",
+    items: [
+      {
+        id: "MOD-LNX",
+        name: "Linux",
+        category: "SYSTEM_ENVIRONMENT",
+        icon: Terminal,
+        color: "text-cyan-400",
+        pulse: "bg-cyan-400",
+        iconBorder: "border-cyan-500/20",
+        capBorder: "border-cyan-500/30",
+        hoverBorder: "border-cyan-500/30",
+        hoverBg: "bg-cyan-950/20",
+        activeBorder: "border-cyan-500/50",
+        activeBg: "bg-[#0c0c0c]",
+        bgGlow: "group-hover:shadow-[0_0_30px_rgba(34,211,238,0.05)]",
+        borderGlow: "group-hover:border-cyan-500/30",
+        status: "LEARNING / IN USE",
+        desc: "CLI usage for file management, environment configuration, and permission control.",
+        capabilities: ["Permission Hardening", "CLI Navigation", "Basic Scripting"],
+        terminalSnippet: "chmod 700 private_dir",
+        terminalOutput: "permissions updated",
+        expandText: "Applied in system audits to restrict directory access and enforce the Principle of Least Privilege."
+      },
+      {
+        id: "MOD-WIN",
+        name: "Windows",
+        category: "SYSTEM_ENVIRONMENT",
+        icon: Monitor,
+        color: "text-blue-400",
+        pulse: "bg-blue-400",
+        iconBorder: "border-blue-500/20",
+        capBorder: "border-blue-500/30",
+        hoverBorder: "border-blue-500/30",
+        hoverBg: "bg-blue-950/20",
+        activeBorder: "border-blue-500/50",
+        activeBg: "bg-[#0c0c0c]",
+        bgGlow: "group-hover:shadow-[0_0_30px_rgba(96,165,250,0.05)]",
+        borderGlow: "group-hover:border-blue-500/30",
+        status: "LEARNING / IN USE",
+        desc: "Using PowerShell and WSL to run Linux-style workflows natively.",
+        capabilities: ["PowerShell", "WSL Integration", "Process Management"],
+        terminalSnippet: "wsl --install",
+        terminalOutput: "Ubuntu has been installed.",
+        expandText: "Serves as the main working environment, bridging the gap between Windows GUI and Linux command-line tools."
+      }
+    ]
   },
-  { 
-    id: "03", name: "Wireshark", category: "ANALYSIS", tier: "Practiced", confidence: 65,
-    desc: "Deep packet inspection and protocol analysis.",
-    capabilities: ["Traffic Filtering", "TLS Decryption"], // FIXED: TLS instead of TSL
-    appliedIn: "Malware Traffic Analysis Lab",
-    impact: "Identified C2 communication patterns in a breach.",
-    reportType: "Analysis Report"
-  },
-  { 
-    id: "04", name: "Splunk / Chronicle", category: "DEFENSE", tier: "Learning", confidence: 45,
-    desc: "Cloud-native SIEM for log aggregation and response.",
-    capabilities: ["SPL Querying", "YARA-L Rules"],
-    appliedIn: "SOC Simulation Environment",
-    impact: "Created detection rules for suspicious login behavior.",
-    reportType: "SOC Case Study"
-  },
-  { 
-    id: "05", name: "Python / Bash", category: "DEVELOPMENT", tier: "Practiced", confidence: 72,
-    desc: "Scripting for security task automation and log parsing.",
-    capabilities: ["Socket Programming", "Task Automation"],
-    appliedIn: "Security Tooling Pipeline",
-    impact: "Automated daily log rotation and scanning reports.",
-    reportType: "Automation Script"
-  },
-  { 
-    id: "06", name: "SQL", category: "ANALYSIS", tier: "Practiced", confidence: 78,
-    desc: "Querying relational databases for forensic extraction.",
-    capabilities: ["Joins/Subqueries", "Injection Mitigation"],
-    appliedIn: "Web App Security Audit",
-    impact: "Secured backend queries against common SQLi vectors.",
-    reportType: "Vulnerability Report"
+  {
+    title: "DATABASE",
+    items: [
+      {
+        id: "MOD-SQL",
+        name: "SQL",
+        category: "DATA_INVESTIGATION",
+        icon: Database,
+        color: "text-amber-400",
+        pulse: "bg-amber-400",
+        iconBorder: "border-amber-500/20",
+        capBorder: "border-amber-500/30",
+        hoverBorder: "border-amber-500/30",
+        hoverBg: "bg-amber-950/20",
+        activeBorder: "border-amber-500/50",
+        activeBg: "bg-[#0c0c0c]",
+        bgGlow: "group-hover:shadow-[0_0_30px_rgba(251,191,36,0.05)]",
+        borderGlow: "group-hover:border-amber-500/30",
+        status: "LEARNING / IN USE",
+        desc: "Database querying for log filtering and identifying behavioral patterns.",
+        capabilities: ["Log Filtering", "Data Correlation", "Pattern Identification"],
+        terminalSnippet: "SELECT * FROM log_in_attempts WHERE success = 0;",
+        terminalOutput: "3 rows returned",
+        expandText: "Used heavily to parse authentication logs, track anomalies across dates, and correlate geolocation data."
+      }
+    ]
   }
 ];
 
-const SkillCard = ({ tool }: { tool: Tool }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const config = TIER_CONFIG[tool.tier];
+// Flatten IDs for keyboard navigation
+const allSkillIds = skillGroups.flatMap(group => group.items.map(item => item.id));
+
+export default function Skills() {
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [isSectionHovered, setIsSectionHovered] = useState(false);
+
+  // Keyboard Navigation (Scoped to section hover)
+  useEffect(() => {
+    if (!isSectionHovered) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const currentIndex = hoveredId ? allSkillIds.indexOf(hoveredId) : -1;
+
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+        e.preventDefault();
+        const nextIndex = (currentIndex + 1) % allSkillIds.length;
+        setHoveredId(allSkillIds[nextIndex]);
+      }
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        const prevIndex = (currentIndex - 1 + allSkillIds.length) % allSkillIds.length;
+        setHoveredId(allSkillIds[prevIndex]);
+      }
+      if (e.key === "Enter" && hoveredId) {
+        e.preventDefault();
+        setActiveId(prev => prev === hoveredId ? null : hoveredId);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hoveredId, isSectionHovered]);
 
   return (
-    <motion.div 
-      onClick={() => setIsExpanded(!isExpanded)}
-      layout
-      className={`group relative w-[320px] flex-shrink-0 bg-[#050505] border-l-4 transition-all duration-300 cursor-pointer overflow-hidden
-        ${isExpanded ? 'h-[480px] bg-[#080808]' : 'h-[240px] hover:bg-[#0a0a0a]'} ${config.border}`}
+    <section 
+      id="skills" 
+      onMouseEnter={() => setIsSectionHovered(true)}
+      onMouseLeave={() => setIsSectionHovered(false)}
+      className="relative min-h-screen w-full bg-[#030303] text-white pt-[120px] sm:pt-[110px] md:pt-[130px] pb-24 px-4 sm:px-6 md:px-12 lg:px-24 overflow-hidden border-t border-white/5"
     >
-      <div className="relative z-10 p-6 flex flex-col h-full">
-        {/* Tier Badge & Live Status */}
-        <div className="flex justify-between items-center mb-4">
-          <div className={`flex items-center gap-2 px-2 py-0.5 border ${config.border} ${config.glow}`}>
-             <span className={`w-1.5 h-1.5 rounded-full ${config.bg} animate-pulse`}></span>
-             <span className={`font-mono text-[9px] font-black uppercase tracking-widest ${config.color}`}>
-               {tool.tier} // {config.label}
-             </span>
+      
+      {/* BACKGROUND DEPTH */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/60 pointer-events-none z-[1]"></div>
+      <div className="absolute inset-0 opacity-[0.02] pointer-events-none bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:40px_40px]"></div>
+
+      <div className="relative z-10 max-w-4xl mx-auto">
+        
+        {/* HUD Header */}
+        <div className="mb-16 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Zap size={14} className="text-cyan-500" />
+              <span className="font-mono text-[10px] tracking-[0.5em] text-cyan-500 uppercase">// SYSTEM_MODULES</span>
+            </div>
+            
+            {/* MICRO SYSTEM FEEDBACK */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[9px] font-mono text-zinc-600 tracking-widest border border-white/5 px-3 py-1.5 bg-white/[0.02] rounded-sm">
+              <div className="flex gap-4">
+                <span>MODULES: {String(allSkillIds.length).padStart(2, '0')}</span>
+                <span>STATUS: ACTIVE</span>
+              </div>
+              <span className="hidden sm:inline-block border-l border-zinc-800 pl-4 text-zinc-700">
+                [↑] [↓] NAVIGATE • [ENTER] INSPECT
+              </span>
+            </div>
           </div>
-          <span className="font-mono text-[9px] text-zinc-700 font-bold tracking-widest">CMD_{tool.id}</span>
+          
+          <div className="space-y-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tighter uppercase leading-[0.8]">
+              Technical <span className="text-zinc-800 italic font-light">Skills.</span>
+            </h2>
+            <p className="font-mono text-[10px] text-zinc-600 tracking-[0.3em] uppercase">
+              Currently working with these tools
+            </p>
+          </div>
+          
+          {/* HUMAN TOUCH & INITIAL GUIDANCE */}
+          <div className="space-y-2">
+            <p className="text-zinc-500 text-[13px] sm:text-sm font-light max-w-md leading-relaxed">
+              These are the tools I actively use while learning and building security-focused projects. Focused on establishing strong fundamentals in system security and network analysis.
+            </p>
+            <p className="text-[11px] font-mono text-zinc-700 pt-2">
+              <span className="hidden sm:inline">Hover to explore • Click to inspect modules</span>
+              <span className="sm:hidden">Tap to inspect modules</span>
+            </p>
+          </div>
         </div>
 
-        {/* Identity */}
-        <div className="space-y-1">
-          <h3 className="text-3xl font-black tracking-tighter uppercase leading-none italic group-hover:text-white transition-colors">
-            {tool.name}
-          </h3>
-          <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">{tool.category}</p>
-        </div>
-
-        {!isExpanded && (
-          <p className="mt-4 text-[11px] text-zinc-400 leading-tight line-clamp-2 font-medium">
-            {tool.desc}
+        {/* GUIDED EMPTY STATE */}
+        {!activeId && (
+          <p className="text-[11px] text-zinc-600 font-mono mb-6 uppercase tracking-widest animate-pulse">
+            {`>`} Select a module to initialize inspection
           </p>
         )}
 
-        {/* Progress Bar (Visible Always) */}
-        <div className="mt-4 space-y-1.5">
-          <div className="flex justify-between text-[8px] font-mono text-zinc-600">
-             <span>CONFIDENCE_LEVEL</span>
-             <span>{tool.confidence}%</span>
-          </div>
-          <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden">
-            <motion.div 
-              initial={{ width: 0 }}
-              whileInView={{ width: `${tool.confidence}%` }}
-              className={`h-full ${config.bg}`}
-            />
-          </div>
-        </div>
-
-        <AnimatePresence>
-          {isExpanded && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 space-y-5 border-t border-zinc-900 pt-6">
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Capabilities</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tool.capabilities.map(cap => (
-                      <span key={cap} className="text-[8px] font-mono text-zinc-300 bg-zinc-900 px-1.5 py-0.5 border border-white/5 uppercase">{cap}</span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[8px] font-black text-zinc-600 uppercase tracking-widest mb-1">Impact_Factor</label>
-                  <p className="text-[11px] text-zinc-400 italic leading-relaxed">{tool.impact}</p>
-                </div>
-              </div>
+        {/* STRUCTURED GROUPS */}
+        <div className="space-y-12">
+          {skillGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className="space-y-5">
               
-              <button className={`w-full flex items-center justify-center gap-2 py-3 ${config.bg} text-black text-[10px] font-black uppercase tracking-widest hover:brightness-125 transition-all mt-auto`}>
-                View {tool.reportType} <ExternalLink size={12} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+              {/* SECTION TITLE DIVIDER */}
+              <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-zinc-800/50" />
+                <span className="font-mono text-[10px] text-zinc-600 tracking-widest uppercase">
+                  {group.title} ({String(group.items.length).padStart(2, '0')})
+                </span>
+                <div className="h-px flex-1 bg-zinc-800/50" />
+              </div>
 
-      {!isExpanded && (
-        <div className="absolute top-6 right-6">
-          <Plus size={14} className="text-zinc-800 group-hover:text-white transition-colors" />
-        </div>
-      )}
-    </motion.div>
-  );
-};
+              {/* GRID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                {group.items.map((skill, index) => {
+                  const Icon = skill.icon;
+                  const isHovered = hoveredId === skill.id;
+                  const isActive = activeId === skill.id;
 
-export default function Skills() {
-  return (
-    <section id="skills" className="relative min-h-screen w-full bg-[#020202] text-white py-32 overflow-hidden border-t border-white/[0.03]">
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[linear-gradient(to_right,#00ffff_1px,transparent_1px),linear-gradient(to_bottom,#00ffff_1px,transparent_1px)] bg-[size:60px_60px]"></div>
+                  return (
+                    <motion.div
+                      key={skill.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: index * 0.1 }}
+                      onMouseEnter={() => setHoveredId(skill.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      onClick={() => setActiveId(isActive ? null : skill.id)}
+                      className={`group relative border p-6 flex flex-col justify-between transition-all duration-300 hover:-translate-y-[2px] cursor-pointer min-h-[280px] ${
+                        isActive ? `${skill.activeBorder} ${skill.activeBg}` : `bg-[#080808] border-white/5 ${skill.bgGlow} ${skill.borderGlow}`
+                      } ${isHovered && !isActive ? "scale-[1.01]" : "scale-100"}`}
+                    >
+                      
+                      {/* Header: Icon & ID */}
+                      <div className="flex justify-between items-start mb-6">
+                        <div className={`p-3 border rounded-sm transition-colors duration-500 ${
+                          isActive || isHovered ? `bg-white/[0.05] ${skill.iconBorder}` : "bg-white/[0.02] border-white/5"
+                        }`}>
+                          <Icon size={24} className={`transition-colors duration-500 ${isActive || isHovered ? skill.color : "text-zinc-500"}`} />
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="font-mono text-[9px] text-zinc-600 tracking-widest uppercase">REF: {skill.id}</span>
+                          <span className={`font-mono text-[8px] px-2 py-0.5 border uppercase tracking-widest transition-colors duration-500 ${
+                            isActive || isHovered ? `${skill.hoverBorder} ${skill.color} ${skill.hoverBg}` : "border-white/10 text-zinc-500"
+                          }`}>
+                            {skill.status}
+                          </span>
+                        </div>
+                      </div>
 
-      <div className="relative z-10 max-w-[1800px] mx-auto px-6 md:px-16 mb-24 space-y-12">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <Zap size={16} className="text-cyan-500" />
-              <span className="font-mono text-[10px] font-black tracking-[0.6em] text-cyan-500 uppercase">Audit_v2.5_Active</span>
+                      {/* Identity & Description */}
+                      <div className="space-y-4 mb-8">
+                        <div>
+                          <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight uppercase mb-1">
+                            {skill.name}
+                          </h3>
+                          <p className={`font-mono text-[10px] tracking-[0.2em] uppercase transition-colors duration-500 ${isActive || isHovered ? skill.color : "text-zinc-600"}`}>
+                            {skill.category}
+                          </p>
+                        </div>
+                        <p className="text-[13px] text-zinc-400 font-light leading-relaxed max-w-sm">
+                          {skill.desc}
+                        </p>
+                      </div>
+
+                      {/* Capabilities & Terminal Row */}
+                      <div className="space-y-6 mt-auto">
+                        
+                        <div className="flex justify-between items-end">
+                          <div className="flex flex-wrap gap-2">
+                            {skill.capabilities.map((cap, i) => (
+                              <span key={i} className={`text-[9px] font-mono bg-[#050505] border px-2 py-1 uppercase tracking-wider transition-colors duration-300 ${
+                                isActive ? `${skill.capBorder} ${skill.color}` : "border-white/5 text-zinc-400"
+                              }`}>
+                                {cap}
+                              </span>
+                            ))}
+                          </div>
+                          
+                          {/* VISUAL AFFORDANCE */}
+                          <span className={`text-[9px] font-mono uppercase tracking-widest transition-colors duration-300 ${isActive ? skill.color : "text-zinc-600 group-hover:text-zinc-400"}`}>
+                            {isActive ? "Collapse ↑" : "Inspect ↓"}
+                          </span>
+                        </div>
+
+                        {/* Terminal Snippet */}
+                        <div className="relative bg-black border border-white/10 p-3 rounded-sm overflow-hidden">
+                          <div className={`absolute left-0 top-0 bottom-0 w-[2px] transition-colors duration-500 ${isActive || isHovered ? skill.pulse : "bg-zinc-800"}`}></div>
+                          
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 overflow-hidden">
+                              <ChevronRight size={14} className="text-zinc-600 flex-shrink-0" />
+                              <code className="text-[11px] font-mono text-zinc-300 truncate">
+                                {skill.terminalSnippet}
+                                {isHovered && <span className={`animate-pulse ml-1 ${skill.color}`}>|</span>}
+                              </code>
+                            </div>
+                            {isHovered && (
+                              <span className="text-[9px] text-zinc-600 font-mono flex-shrink-0 animate-pulse hidden sm:block">
+                                executing...
+                              </span>
+                            )}
+                          </div>
+                          
+                          {/* FAKE OUTPUT */}
+                          <div className="text-[9px] text-zinc-600 mt-1.5 ml-7 font-mono">
+                            output: {skill.terminalOutput}
+                          </div>
+                        </div>
+
+                        {/* EXPANDED INTERACTIVE STATE */}
+                        <AnimatePresence>
+                          {isActive && (
+                            <motion.div 
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.3, ease: "easeInOut" }}
+                              className="border-t border-white/5 pt-4 overflow-hidden"
+                            >
+                              <div className={`text-[9px] font-mono uppercase tracking-widest mb-4 ${skill.color}`}>
+                                {`>>`} MODULE_ANALYSIS_LOADED
+                              </div>
+                              
+                              <div className="space-y-5">
+                                {/* IMPLEMENTATION CONTEXT */}
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+                                    Implementation_Context
+                                  </p>
+                                  <p className="text-[12px] text-zinc-400 leading-relaxed border-l-2 border-zinc-800 pl-3">
+                                    {skill.expandText}
+                                  </p>
+                                </div>
+                                
+                                {/* WHAT I CAN DO */}
+                                <div className="space-y-2">
+                                  <p className="text-[10px] font-mono text-zinc-600 uppercase tracking-widest">
+                                    Functional_Capabilities
+                                  </p>
+                                  <ul className="text-[12px] text-zinc-400 list-disc ml-4 space-y-1">
+                                    {skill.capabilities.map((c, i) => (
+                                      <li key={i} className="pl-1">{c}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
+                              
+                              {/* SELF-CONTAINED INDICATOR (Replaced Link) */}
+                              <span className={`inline-flex items-center gap-2 text-[10px] mt-6 font-mono tracking-widest uppercase ${skill.color}`}>
+                                Module Details
+                                <ChevronRight size={10} />
+                              </span>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                      </div>
+
+                    </motion.div>
+                  );
+                })}
+              </div>
             </div>
-            <h2 className="text-6xl md:text-[140px] font-black tracking-tighter uppercase leading-[0.75]">
-              TECH<br/><span className="text-zinc-800 italic">ARSENAL.</span>
-            </h2>
-          </div>
-          
-          {/* Skill Distribution Header */}
-          <div className="bg-white/[0.02] border border-white/5 p-8 rounded-sm space-y-6 w-full max-w-md">
-            <h4 className="text-[10px] font-mono text-zinc-500 uppercase tracking-[0.3em]">Fleet_Proficiency_Distribution</h4>
-            <div className="space-y-4">
-              {[
-                { label: "Advanced", width: "w-[40%]", color: "bg-green-500" },
-                { label: "Practiced", width: "w-[35%]", color: "bg-orange-500" },
-                { label: "Learning", width: "w-[25%]", color: "bg-red-500" },
-              ].map((bar) => (
-                <div key={bar.label} className="space-y-1.5">
-                  <div className="flex justify-between text-[9px] font-mono uppercase tracking-tighter">
-                    <span className="text-zinc-400">{bar.label}</span>
-                    <span className="text-zinc-600">{bar.width.match(/\d+/)}%</span>
-                  </div>
-                  <div className="h-1 w-full bg-zinc-900">
-                    <div className={`h-full ${bar.color} ${bar.width}`}></div>
-                  </div>
-                </div>
-              ))}
+          ))}
+        </div>
+        
+        {/* Footer Meta */}
+        <div className="mt-16 pt-8 border-t border-white/5 flex justify-between items-center">
+          <div className="flex gap-4 sm:gap-10 font-mono text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></div> 
+              <span className="hidden sm:inline">Systems_Operational</span>
+              <span className="sm:hidden">Online</span>
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* Rows with Section Color Logic */}
-      <div className="relative space-y-32">
-        <div className="relative group">
-           {/* Red Tint for RECON */}
-          <div className="absolute inset-x-0 h-full bg-red-500/[0.02] pointer-events-none" />
-          <SkillRow title="Infiltration_Recon" icon={Target} items={tools.filter(t => t.category === "RECON")} color="text-red-500" />
+          <div className="font-mono text-[9px] font-black uppercase tracking-[0.4em] text-zinc-600">
+            2026 // JOTHISH_CORE
+          </div>
         </div>
 
-        <div className="relative group">
-           {/* Orange Tint for ANALYSIS */}
-          <div className="absolute inset-x-0 h-full bg-orange-500/[0.01] pointer-events-none" />
-          <SkillRow title="Security_Analytics" icon={Database} items={tools.filter(t => t.category === "ANALYSIS")} color="text-orange-500" />
-        </div>
-
-        <div className="relative group">
-           {/* Green Tint for DEFENSE */}
-          <div className="absolute inset-x-0 h-full bg-green-500/[0.02] pointer-events-none" />
-          <SkillRow title="Infrastructure_Defense" icon={Shield} items={tools.filter(t => t.category === "DEFENSE")} color="text-green-500" />
-        </div>
-
-        <div className="relative group">
-           {/* Cyan for DEVELOPMENT */}
-          <div className="absolute inset-x-0 h-full bg-cyan-500/[0.02] pointer-events-none" />
-          <SkillRow title="Automation_Development" icon={Code} items={tools.filter(t => t.category === "DEVELOPMENT")} color="text-cyan-500" />
-        </div>
-      </div>
-
-      <div className="max-w-[1800px] mx-auto px-6 md:px-16 mt-40 flex justify-between items-center border-t border-zinc-900 pt-8">
-        <div className="flex gap-10 font-mono text-[9px] font-black uppercase tracking-[0.4em] text-zinc-700">
-           <div className="flex items-center gap-2">
-             <div className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse"></div> 
-             Fleet_Hardware_Secure
-           </div>
-           <div>Session: 2026_Audit_Verified</div>
-        </div>
       </div>
     </section>
   );
 }
-
-const SkillRow = ({ title, icon: Icon, items, color }: { title: string, icon: any, items: Tool[], color: string }) => (
-  <div className="space-y-8 relative z-10">
-    <div className="px-6 md:px-16 flex items-center gap-4">
-      <div className={`h-px flex-1 bg-gradient-to-r from-transparent via-zinc-900 to-transparent`}></div>
-      <div className="flex items-center gap-2 bg-black px-4">
-        <Icon size={14} className={color} />
-        <h4 className={`font-black text-[10px] uppercase tracking-[0.5em] text-zinc-500`}>{title}</h4>
-      </div>
-      <div className={`h-px flex-1 bg-gradient-to-r from-transparent via-zinc-900 to-transparent`}></div>
-    </div>
-    <div className="flex gap-6 px-6 md:px-16 overflow-x-auto pb-12 no-scrollbar">
-      {items.map((tool) => (
-        <SkillCard key={tool.id} tool={tool} />
-      ))}
-    </div>
-  </div>
-);

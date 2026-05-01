@@ -51,3 +51,97 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(0,255,255,0.4) #020202;
 }
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  transition: background 0.4s ease, color 0.4s ease;
+  overscroll-behavior: none;
+}
+
+/* Subtle Base Background Texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    circle at top,
+    rgba(255, 255, 255, 0.03),
+    transparent 60%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ===== SCROLLBAR (GLOBAL) ===== */
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #020202;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    to bottom,
+    rgba(34, 211, 238, 0.3),
+    rgba(59, 130, 246, 0.3)
+  );
+  border-radius: 999px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    to bottom,
+    rgba(34, 211, 238, 0.6),
+    rgba(59, 130, 246, 0.6)
+  );
+}
+
+/* Firefox and Mobile Polish */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(34, 211, 238, 0.5) #020202;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== SELECTION & FOCUS ===== */
+
+::selection {
+  background: rgba(34, 211, 238, 0.3);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 1px solid rgba(34, 211, 238, 0.4);
+  outline-offset: 2px;
+}

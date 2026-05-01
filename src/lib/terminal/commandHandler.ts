@@ -12,8 +12,16 @@ type ContactSession = {
   data: { name: string; email: string; message: string; };
 };
 
+// --- GLOBAL STATE & ANALYTICS ---
+export let analytics = {
+  totalCommands: 0,
+  commandUsage: {} as Record<string, number>,
+  lastCommand: "",
+};
+
 export let state = {
   isRoot: false,
+  cmdHistory: [] as string[],
   contactSession: {
     active: false,
     step: "name",
@@ -21,243 +29,341 @@ export let state = {
   } as ContactSession,
 };
 
+// --- HELPER FUNCTIONS ---
+function output(text: string): CommandResult {
+  return text.trim();
+}
+
+function stream(lines: string[], delay = 50): CommandResult {
+  return { type: "stream", lines, delay };
+}
+
+// --- COMMAND ENGINE ---
+type Command = {
+  name: string;
+  execute: (args: string[]) => CommandResult;
+};
+
+const commands: Record<string, Command> = {
+  help: {
+    name: "help",
+    execute: () => output(`
+AVAILABLE PROTOCOLS:
+--------------------------------------------------
+whoami      - Display current user identity
+about       - My learning journey
+skills      - Current toolset & focus
+projects    - List investigative case files
+contact     - Let's connect
+ls          - List directory contents
+cat <file>  - Read file contents
+ping <tgt>  - Check connection to target
+whois <dom> - Domain registry lookup
+open <sec>  - Navigate portfolio (e.g., open projects)
+clear       - Purge terminal buffer
+exit        - Terminate terminal UI
+--------------------------------------------------
+SYSTEM / POWER COMMANDS:
+history     - View your command history
+stats       - View session statistics
+time        - Display local time
+search      - Query the system
+echo        - Print text to screen
+learn       - Enter learning mode
+suggest     - Get a random command suggestion
+system      - View core system status
+analytics   - View session analytics breakdown
+--------------------------------------------------
+ALIASES: p (projects), s (skills), a (about), c (contact)`)
+  },
+  whoami: {
+    name: "whoami",
+    execute: () => output(`
+USER: ${state.isRoot ? "root (Admin)" : "jothish (Analyst)"}
+ROLE: Cybersecurity Learner & Builder
+STATUS: Active
+PERMISSIONS: ${state.isRoot ? "FULL_SYSTEM_ACCESS" : "STANDARD_USER_SHELL"}`)
+  },
+  about: {
+    name: "about",
+    execute: () => stream([
+      "Loading profile...",
+      "",
+      "I didn’t start with everything figured out.",
+      "I started by trying to understand what happens when systems break.",
+      "",
+      "Now I’m focused on:",
+      "- observing system behavior",
+      "- understanding patterns",
+      "- learning through real experimentation",
+      "",
+      "Still learning. Still building."
+    ], 60)
+  },
+  skills: {
+    name: "skills",
+    execute: () => stream([
+      "Initializing skill modules...",
+      "",
+      "Core Tools:",
+      "• Linux (daily usage)",
+      "• Wireshark (packet inspection)",
+      "• tcpdump (command-line capture)",
+      "• SQL (data filtering)",
+      "",
+      "Focus Areas:",
+      "• Log Analysis",
+      "• Network Behavior",
+      "• Pattern Detection",
+      "",
+      "Status: Learning & improving every day."
+    ], 50)
+  },
+  projects: {
+    name: "projects",
+    execute: () => stream([
+      "Fetching case files...",
+      "",
+      "[1] Botium Toys Audit",
+      "    → Risk assessment using NIST CSF",
+      "",
+      "[2] Vulnerability Scan",
+      "    → Automated network scanning",
+      "",
+      "[3] Log Parser Tool",
+      "    → Python-based log analysis",
+      "",
+      "Tip: Use 'project 1' to inspect deeper, or 'open projects' to view UI."
+    ], 50)
+  },
+  project: {
+    name: "project",
+    execute: (args) => {
+      if (args[1] === "1") return output("Detailed analysis of Botium Toys:\n- Conducted risk assessment\n- Mapped to NIST CSF\n- Identified 5 critical vulnerabilities.");
+      if (args[1] === "2") return output("Vulnerability Scan:\n- Used Nmap for network discovery\n- Documented open ports and services.");
+      if (args[1] === "3") return output("Log Parser Tool:\n- Python script to parse auth logs\n- Extracted failed login attempts.");
+      return output("usage: project <1|2|3>");
+    }
+  },
+  open: {
+    name: "open",
+    execute: (args) => {
+      if (args[1] === "projects") return "__OPEN_PROJECTS__";
+      return output("usage: open projects");
+    }
+  },
+  ls: {
+    name: "ls",
+    execute: () => output("drwxr-xr-x  jothish  staff  bio.txt\ndrwxr-xr-x  jothish  staff  skills.txt\ndrwxr-xr-x  jothish  staff  projects/")
+  },
+  cat: {
+    name: "cat",
+    execute: (args) => {
+      const files: Record<string, string> = {
+        "bio.txt": "I focus on learning systems through real experimentation.",
+        "skills.txt": "Linux, Wireshark, tcpdump, SQL",
+      };
+      if (!args[1]) return output("usage: cat <file>");
+      if (files[args[1]]) return output(files[args[1]]);
+      return output(`cat: ${args[1]}: No such file or directory`);
+    }
+  },
+  whois: {
+    name: "whois",
+    execute: (args) => {
+      if (!args[1]) return output("usage: whois <domain>");
+      return output(`Domain: ${args[1]}\nStatus: Active\nOwner: Public Registry\nUpdated Date: 2026-03-27\nName Server: NS1.JOTHISH.IO`);
+    }
+  },
+  ping: {
+    name: "ping",
+    execute: (args) => {
+      const target = args[1] || "localhost";
+      return stream([
+        `PING ${target} (127.0.0.1) 56(84) bytes of data.`,
+        `64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.04 ms`,
+        `64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.05 ms`,
+        `64 bytes from 127.0.0.1: icmp_seq=3 ttl=64 time=0.04 ms`,
+        `--- ${target} ping statistics ---`,
+        `3 packets transmitted, 3 received, 0% packet loss`
+      ], 100);
+    }
+  },
+  
+  // --- NEW POWER COMMANDS ---
+  history: {
+    name: "history",
+    execute: () => output(state.cmdHistory.map((cmd, i) => `  ${i + 1}  ${cmd}`).join("\n") || "No history")
+  },
+  stats: {
+    name: "stats",
+    execute: () => output(`
+Session running...
+Commands executed: ${analytics.totalCommands}
+Active mode: ${state.isRoot ? "ROOT" : "USER"}
+`)
+  },
+  time: {
+    name: "time",
+    execute: () => output(`Current Time: ${new Date().toLocaleTimeString()}`)
+  },
+  search: {
+    name: "search",
+    execute: (args) => {
+      if (!args[1]) return output("usage: search <keyword>");
+      return output(`Searching for "${args[1]}"...\nNo indexed results yet.`);
+    }
+  },
+  echo: {
+    name: "echo",
+    execute: (args) => output(args.slice(1).join(" "))
+  },
+  learn: {
+    name: "learn",
+    execute: () => stream([
+      "Learning Mode Activated...",
+      "",
+      "Focus:",
+      "- Observing patterns",
+      "- Understanding behavior",
+      "- Building systems",
+      "",
+      "Keep going."
+    ], 60)
+  },
+  suggest: {
+    name: "suggest",
+    execute: () => {
+      const cmds = Object.keys(commands);
+      return output(`Try: ${cmds[Math.floor(Math.random() * cmds.length)]}`);
+    }
+  },
+  system: {
+    name: "system",
+    execute: () => stream([
+      "System Status:",
+      "----------------",
+      "Terminal: Active",
+      "User Mode: " + (state.isRoot ? "Root" : "User"),
+      "Commands Executed: " + analytics.totalCommands,
+      "Status: Operational"
+    ], 50)
+  },
+  analytics: {
+    name: "analytics",
+    execute: () => {
+      const usage = Object.entries(analytics.commandUsage)
+        .map(([cmd, count]) => `  ${cmd}: ${count}`)
+        .join("\n");
+      return output(`
+[ SESSION ANALYTICS ]
+---------------------------
+Total Commands: ${analytics.totalCommands}
+Last Command: ${analytics.lastCommand}
+
+Usage Breakdown:
+${usage || "No commands yet"}
+---------------------------`);
+    }
+  },
+
+  joke: {
+    name: "joke",
+    execute: () => output("Why do cybersecurity researchers always get lost? Because they follow the 'path' but never the breadcrumbs.")
+  },
+  exit: {
+    name: "exit",
+    execute: () => "__EXIT__"
+  },
+  clear: {
+    name: "clear",
+    execute: () => "__CLEAR__"
+  },
+  contact: {
+    name: "contact",
+    execute: () => {
+      state.contactSession.active = true;
+      state.contactSession.step = "name";
+      state.contactSession.data = { name: "", email: "", message: "" };
+      return output("Let’s connect.\nTell me your name (or type 'cancel'):");
+    }
+  }
+};
+
+export const availableCommands = Object.keys(commands);
+const aliases: Record<string, string> = { p: "projects", s: "skills", a: "about", c: "contact", h: "help" };
+
 export function handleCommand(input: string): CommandResult {
   const fullCommand = input.trim();
   if (!fullCommand) return "";
+
+  // Update State History
+  state.cmdHistory.push(fullCommand);
 
   // --- CONTACT WIZARD INTERCEPTOR ---
   if (state.contactSession.active) {
     const session = state.contactSession;
     const lowerInput = fullCommand.toLowerCase();
     
+    // Track analytics even during wizard
+    analytics.totalCommands++;
+    analytics.lastCommand = "[contact_wizard]";
+    
     if (lowerInput === "exit" || lowerInput === "cancel" || lowerInput === "quit") {
       state.contactSession.active = false;
-      return "System: Secure channel closed. Buffer cleared.";
+      return output("Got it. Let me know if you change your mind.");
     }
 
     switch (session.step) {
       case "name":
         session.data.name = fullCommand;
         session.step = "email";
-        return "System: Identity recorded. Please provide your [ CONTACT_EMAIL ]:";
+        return output(`Nice to meet you, ${session.data.name}. What’s your email?`);
       case "email":
         if (!fullCommand.includes("@") || !fullCommand.includes(".")) {
-          return "Error: Invalid protocol. Please provide a valid email address:";
+          return output("That doesn't look like an email. Try again:");
         }
         session.data.email = fullCommand;
         session.step = "message";
-        return "System: Link established. Input your [ MESSAGE_PAYLOAD ]:";
+        return output("Got it. What would you like to talk about?");
       case "message":
         session.data.message = fullCommand;
         session.step = "confirm";
-        return `\n--- REVIEW PACKET ---\nFROM: ${session.data.name}\nADDR: ${session.data.email}\nDATA: ${session.data.message}\n----------------------\nTransmit this packet? (y/n):`;
+        return output(`\n--- REVIEW MESSAGE ---\nFROM: ${session.data.name}\nADDR: ${session.data.email}\nDATA: ${session.data.message}\n----------------------\nSend this message? (y/n):`);
       case "confirm":
         if (lowerInput === "y" || lowerInput === "yes") {
           state.contactSession.active = false;
-          return {
-            type: "stream",
-            delay: 80,
-            lines: [
-              "Parsing header...",
-              "Encrypting with AES-256...",
-              "Routing through secure nodes...",
-              "[ SUCCESS ] Packet sent to Jothish's inbox."
-            ]
-          };
+          return stream([
+            "Sending your message...",
+            "Almost there...",
+            "Done.",
+            "I’ll get back to you soon."
+          ], 80);
         }
         state.contactSession.active = false;
-        return "System: Transmission aborted. Cache purged.";
+        return output("Message discarded.");
     }
   }
 
   // --- STANDARD COMMANDS PARSING ---
   const args = fullCommand.split(/\s+/);
-  const cmd = args[0].toLowerCase();
+  const rawCmd = args[0].toLowerCase();
+  const cmdName = aliases[rawCmd] || rawCmd;
 
-  switch (cmd) {
-    case "help":
-      return `
-AVAILABLE PROTOCOLS:
---------------------------------------------------
-whoami      - Display current user identity
-about       - Full analyst profile & education
-skills      - View technical capability matrix
-projects    - List investigative case files
-contact     - Initialize secure messaging uplink
-socials     - List external connection nodes
-clear       - Purge terminal buffer
---------------------------------------------------
-UTILITIES:
-sudo su     - Escalate to root privileges
-neofetch    - System & identity overview
-uptime      - View session duration
-date        - Server local time
-matrix      - Engage data stream simulation
-hack        - Run penetration test simulation
-ls          - List directory contents
-cat <file>  - Read file contents (e.g., cat bio.txt)
-exit        - Terminate terminal UI
---------------------------------------------------`;
+  // Track Analytics
+  analytics.totalCommands++;
+  analytics.lastCommand = cmdName;
+  analytics.commandUsage[cmdName] = (analytics.commandUsage[cmdName] || 0) + 1;
 
-    case "whoami":
-      return `
-USER: ${state.isRoot ? "root (Admin)" : "jothish (Analyst)"}
-ROLE: Cybersecurity Student & Researcher
-STATUS: Active
-PERMISSIONS: ${state.isRoot ? "FULL_SYSTEM_ACCESS" : "STANDARD_USER_SHELL"}`;
-
-    case "about":
-      return `
-[ PROFILE DOSSIER ]
---------------------------------------------------
-NAME: Jothish Gandham
-ACADEMIC: B.Tech (2024-2028)
-ORG: Sandip University, Nashik
-FOCUS: Google Professional Cybersecurity Track
-LOCATION: Maharashtra, India
-MOTTO: "Understanding how they break to build them better."
---------------------------------------------------
-Rapid adaptability and accelerated learning are my core 
-operational traits. Currently deep-diving into network 
-forensics and automated threat detection.`;
-
-    case "skills":
-      return `
-[ CAPABILITY MATRIX ]
---------------------------------------------------
-OFFENSIVE: Nmap, Kali Linux, Python Scripting
-DEFENSIVE: Wireshark, SIEM (Splunk/Chronicle), NIST CSF
-SYSTEMS:   Linux (Debian/Arch), SQL, Bash Automation
-SOFT:      Quick Learner, Adaptive Thinker, Persistent
---------------------------------------------------`;
-
-    case "projects":
-      return `
-[ CASE FILES ]
---------------------------------------------------
-1. Botium Toys Audit     - NIST CSF risk assessment
-2. Vulnerability Scan    - Automated network recon
-3. Python Automation     - Secure log parsing tools
---------------------------------------------------
-Use 'cat' command to read more or view UI Projects section.`;
-
-    case "ls":
-      return "drwxr-xr-x  jothish  staff  bio.txt\ndrwxr-xr-x  jothish  staff  projects/\ndrwxr-xr-x  jothish  staff  certs/";
-
-    case "cat":
-      if (!args[1]) return "usage: cat <filename>";
-      if (args[1] === "bio.txt") return "I am a Cybersecurity Analyst in training, focused on the intersection of network security and automation.";
-      return `cat: ${args[1]}: No such file or directory`;
-
-    case "neofetch":
-      return {
-        type: "stream",
-        delay: 30,
-        lines: [
-          "          .      jothish@kali",
-          "         / \\     ------------",
-          "        /   \\    OS: Kali Linux x86_64",
-          "       /     \\   Host: Sandip University Terminal",
-          "      /       \\  Kernel: 6.1.0-kali7-amd64",
-          "     /_________\\ Uptime: 2 hours, 15 mins",
-          "                 Packages: 2450 (dpkg)",
-          "                 Shell: zsh 5.9",
-          "                 CPU: Adaptive Learner Core i7",
-          "                 Memory: 16GB / 32GB"
-        ]
-      };
-
-    case "socials":
-      return `
-EXTERNAL NODES:
---------------------------------------------------
-LinkedIn: linkedin.com/in/jothishgandham
-GitHub:   github.com/jothish-blip
-Email:    jothishgandham2@gmail.com
---------------------------------------------------`;
-
-    case "sudo":
-      if (args[1] === "su") {
-        state.isRoot = true;
-        return "Escalating privileges... root access granted.";
-      }
-      return "usage: sudo su";
-
-    case "uptime":
-      return `System Uptime: ${Math.floor(Math.random() * 100)} days, ${Math.floor(Math.random() * 24)} hours.`;
-
-    case "date":
-      return new Date().toLocaleString();
-
-    case "matrix":
-      return {
-        type: "stream",
-        delay: 40,
-        lines: Array.from({ length: 15 }, () => 
-          Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-        )
-      };
-
-    case "hack":
-      return {
-        type: "stream",
-        delay: 150,
-        lines: [
-          "[ TASK ] Initiating brute force simulation...",
-          "[ WARN ] Target firewall detected.",
-          "[ INFO ] Bypassing proxy...",
-          "[ OK ] Handshake successful.",
-          "[ DONE ] Root access simulated."
-        ]
-      };
-
-      case "joke":
-      const jokes = [
-        "Why do cybersecurity researchers always get lost? Because they follow the 'path' but never the breadcrumbs.",
-        "How do you get a hacker to do what you want? Tell them it's 'impossible'.",
-        "A SQL query walks into a bar, walks up to two tables and asks: 'Can I join you?'",
-        "I’d tell you a DNS joke but it might take 24 hours for everyone to get it."
-      ];
-      return jokes[Math.floor(Math.random() * jokes.length)];
-
-    case "weather":
-      return "Location: Nashik, MH | Condition: CLEAR | Temp: 28°C | Winds: 5 knots | Visibility: HIGH";
-
-    case "coffee":
-      return {
-        type: "stream",
-        delay: 200,
-        lines: ["Grinding beans...", "Brewing java.exe...", "Injecting caffeine into analyst...", "[ DONE ] System focus improved by 200%."]
-      };
-
-    case "secret":
-      return "ID_PASS: 'admin123' ... Just kidding. You'll have to try harder than that, Analyst.";
-
-    case "whois":
-      if(!args[1]) return "usage: whois <domain>";
-      return `Registrar: Jothish Network Services\nUpdated Date: 2026-03-27\nStatus: clientTransferProhibited\nName Server: NS1.JOTHISH.IO`;
-
-    case "ping":
-      if(!args[1]) return "usage: ping <target>";
-      return {
-        type: "stream",
-        delay: 100,
-        lines: [
-          `PING ${args[1]} (127.0.0.1) 56(84) bytes of data.`,
-          "64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.04 ms",
-          "64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.05 ms",
-          "--- loopback ping statistics ---",
-          "2 packets transmitted, 2 received, 0% packet loss"
-        ]
-      };
-
-    case "exit":
-      return "__EXIT__";
-
-    case "clear":
-      return "__CLEAR__";
-
-    default:
-      return `zsh: command not found: ${cmd}. Type 'help' for authorized protocols.`;
+  // Hidden easter egg for sudo
+  if (cmdName === "sudo" && args[1] === "su") {
+    state.isRoot = true;
+    return output("Escalating privileges... root access granted.");
   }
+
+  if (commands[cmdName]) {
+    return commands[cmdName].execute(args);
+  }
+
+  return output(`Unknown command: ${cmdName}.\nTry 'help' or 'suggest'`);
 }
