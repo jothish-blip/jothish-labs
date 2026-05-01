@@ -1,24 +1,24 @@
 export interface Asset {
   name: string;
-  type: string;
+  type: string; // 'pdf' | 'image'
   url: string;
   isPrimary: boolean;
 }
 
 export interface ChecklistItem {
   control: string;
-  status: string;
+  status: string; // 'Verified' | 'Failed'
   note: string;
 }
 
 export interface TimelineEvent {
   title: string;
   desc: string;
-  tag?: string;
+  tag: string;
 }
 
 export interface PlaybackRow {
-  [key: string]: string;
+  [key: string]: string | number;
 }
 
 export interface PlaybackStep {
@@ -38,12 +38,12 @@ export interface CaseData {
   category: string;
   title: string;
   status: string;
-  riskScore: string;
+  riskScore: number;    // Changed from string to number for logic operations
   riskLevel: string;
   vulnerabilities: number;
-  controlsFailed: number;
+  failedControls: number; // Renamed from controlsFailed for clarity
   description: string;
-  investigationNotes: string;
+  summary: string;      // Renamed from investigationNotes to align with data
   timeline?: TimelineEvent[];
   playback?: PlaybackStep[];
   checklist: ChecklistItem[];

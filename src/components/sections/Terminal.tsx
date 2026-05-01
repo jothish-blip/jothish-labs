@@ -1,44 +1,121 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { handleCommand, state, availableCommands, analytics } from "@/lib/terminal/commandHandler";
 import { 
   Terminal as TerminalIcon, 
   Copy, 
-  Power, 
   X, 
   Minus, 
   Maximize2 
 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 
+type HistoryItem = { command: string; output: string; isRoot: boolean };
+type TabData = { id: number; history: HistoryItem[]; isRoot: boolean };
+
 export default function Terminal() {
-  const [history, setHistory] = useState<{command: string, output: string, isRoot: boolean}[]>([]);
+  const [tabs, setTabs] = useState<TabData[]>([{ id: 1, history: [], isRoot: false }]);
+  const [activeTab, setActiveTab] = useState(0);
+  
   const [input, setInput] = useState("");
-  const [isRoot, setIsRoot] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isClosed, setIsClosed] = useState(true);
   const [copied, setCopied] = useState(false);
-  
   const [historyIndex, setHistoryIndex] = useState(-1);
+  
+  const [isBooting, setIsBooting] = useState(false);
 
   const terminalRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (!isClosed && !isMinimized) {
-      terminalRef.current?.scrollTo({ top: terminalRef.current.scrollHeight, behavior: "smooth" });
+    audioRef.current = new Audio("/typing.mp3");
+    if (audioRef.current) audioRef.current.volume = 0.15;
+  }, []);
+
+  const setHistory = (updater: HistoryItem[] | ((prev: HistoryItem[]) => HistoryItem[])) => {
+    setTabs(prev => prev.map((t, i) => {
+      if (i === activeTab) {
+        return { ...t, history: typeof updater === 'function' ? updater(t.history) : updater };
+      }
+      return t;
+    }));
+  };
+
+  const setIsRoot = (isRoot: boolean) => {
+    setTabs(prev => prev.map((t, i) => i === activeTab ? { ...t, isRoot } : t));
+  };
+
+  const activeHistory = tabs[activeTab].history;
+  const isRoot = tabs[activeTab].isRoot;
+
+  useEffect(() => {
+    if (!isClosed && !isMinimized && !isBooting) {
+      terminalRef.current?.scrollTo({ top: terminalRef.current.scrollHeight, behavior: "auto" });
       inputRef.current?.focus();
     }
-  }, [history, isClosed, isMinimized, isMaximized, input]);
+  }, [activeHistory, isClosed, isMinimized, isMaximized, input, isBooting, activeTab]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFull = !!document.fullscreenElement;
+      setIsMaximized(isFull);
+      if (isFull) {
+        document.documentElement.style.overflow = "hidden";
+      } else {
+        document.documentElement.style.overflow = "";
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.documentElement.style.overflow = ""; 
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      wrapperRef.current?.requestFullscreen().catch(err => console.error(err));
+    } else {
+      document.exitFullscreen();
+    }
+  };
 
   const initTerminal = () => {
     setIsClosed(false);
-    if (history.length === 0) {
-      const welcome = `[ SYSTEM INITIALIZED ]\nUSER: JOTHISH GANDHAM | ROLE: ANALYST\nType 'help' for protocols.`;
-      setHistory([{ command: "system --init", output: welcome, isRoot: false }]);
-    }
+    
+    if (tabs[0].history.length > 0) return;
+    
+    setIsBooting(true);
+    setTimeout(() => {
+      const bootLines = [
+        "Booting Kali Linux...",
+        "[ OK ] Starting Network Manager",
+        "[ OK ] Loading Kernel Modules",
+        "[ OK ] Initializing System",
+        "Welcome to Kali Linux",
+      ];
+
+      let output = "";
+      bootLines.forEach((line, i) => {
+        setTimeout(() => {
+          output += line + "\n";
+          setHistory([{ command: "", output, isRoot: false }]);
+
+          if (i === bootLines.length - 1) {
+            setTimeout(() => {
+              setHistory([{ command: "system --init", output: "Welcome, Jothish Gandham.\nType \"help\" to see available commands.", isRoot: false }]);
+              setIsBooting(false);
+            }, 600);
+          }
+        }, i * 400);
+      });
+    }, 300);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -75,8 +152,7 @@ export default function Terminal() {
     setHistoryIndex(-1);
     setInput("");
     
-    // Set immediate "processing..." feedback
-    setHistory((prev) => [...prev, { command: currentInput, output: "processing...", isRoot: state.isRoot }]);
+    setHistory((prev) => [...prev, { command: currentInput, output: "processing...", isRoot }]);
     
     const result = handleCommand(currentInput);
     setIsRoot(state.isRoot);
@@ -84,7 +160,6 @@ export default function Terminal() {
     if (result === "__CLEAR__") { setHistory([]); return; }
     if (result === "__EXIT__") { setIsClosed(true); return; }
     
-    // UI Interaction Control
     if (result === "__OPEN_PROJECTS__") {
       setHistory(prev => {
         const updated = [...prev];
@@ -110,7 +185,6 @@ export default function Terminal() {
       const delay = result.delay || 50;
       
       for (let i = 0; i < result.lines.length; i++) {
-        // Batch visual rendering to prevent lagging
         if (i % 3 === 0) await new Promise((res) => setTimeout(res, delay));
         currentOutput += result.lines[i] + "\n";
         setHistory((prev) => {
@@ -122,142 +196,247 @@ export default function Terminal() {
     }
   };
 
-  const currentSuggestion = input ? availableCommands.find(c => c.startsWith(input.toLowerCase()) && c !== input.toLowerCase()) : null;
-
-  if (isClosed) {
-    return (
-      <div className="py-20 flex flex-col items-center justify-center bg-[#050505] w-full">
-         <button onClick={initTerminal} className="group flex items-center gap-3 px-8 py-4 border border-red-500/30 bg-black text-red-500 font-mono text-sm tracking-[0.2em] uppercase hover:bg-red-500 hover:text-white transition-all duration-500">
-          <Power size={16} className="group-hover:rotate-90 transition-transform duration-500" />
-          Initialize_Workstation
-        </button>
-      </div>
-    );
-  }
+  const suggestions = input 
+    ? availableCommands.filter(c => c.startsWith(input.toLowerCase()) && c !== input.toLowerCase()).slice(0, 3) 
+    : [];
 
   return (
-    <section className="relative w-full bg-[#050505] flex flex-col items-center py-20 px-4 sm:px-10 z-30">
-      
-      <div 
-        className={`transition-all duration-700 ease-in-out border border-white/10 flex flex-col relative overflow-x-hidden focus-within:border-cyan-500/30 focus-within:shadow-[0_0_30px_rgba(34,211,238,0.05)] bg-black/60 backdrop-blur-lg
-        ${isMaximized 
-          ? 'fixed inset-0 w-full h-full z-[9999] rounded-none border-none shadow-none bg-[#050505]' 
-          : 'w-full max-w-4xl h-[500px] shadow-2xl rounded-lg'}
-        ${isMinimized ? 'h-12 opacity-50 overflow-hidden' : ''}`}
-      >
+    <>
+      {/* 🔴 FIXED: Moved styles OUT of the conditional render so variables are always loaded */}
+      <style jsx global>{`
+        :root {
+          /* Light Mode Defaults */
+          --bg-terminal: #ffffff;
+          --text-primary: #111111;
+          --text-dim: #6b7280;
+          
+          --red-main: #dc2626;
+          --red-hover: #b91c1c;
+          --red-soft: rgba(220, 38, 38, 0.08);
+          
+          --green-root: #059669;
+          --warning: #d97706;
+          --border-terminal: #e5e7eb;
+        }
+        
+        html.dark {
+          /* Dark Mode Defaults */
+          --bg-terminal: #0a0a0a;
+          --text-primary: #e5e5e5;
+          --text-dim: #6b7280;
+          
+          --red-main: #ff4d4d;
+          --red-hover: #ff1f1f;
+          --red-soft: rgba(255, 77, 77, 0.08);
+          
+          --green-root: #00ff9c;
+          --warning: #f59e0b;
+          --border-terminal: #1f1f1f;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border-terminal); }
+        
+        input, textarea {
+          outline: none !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+      `}</style>
 
-        {/* HEADER */}
-        <div className="relative flex items-center px-4 py-2.5 bg-zinc-900/90 border-b border-white/5 z-30">
-          <div className="flex items-center gap-2 z-20">
-            <button onClick={() => setIsClosed(true)} className="w-3 h-3 rounded-full bg-[#ff5f56] flex items-center justify-center">
-              <X size={8} className="text-black/50" />
-            </button>
-            <button onClick={() => setIsMinimized(!isMinimized)} className="w-3 h-3 rounded-full bg-[#ffbd2e] flex items-center justify-center">
-              <Minus size={8} className="text-black/50" />
-            </button>
-            <button onClick={() => setIsMaximized(!isMaximized)} className="w-3 h-3 rounded-full bg-[#27c93f] flex items-center justify-center">
-              <Maximize2 size={8} className="text-black/50" />
-            </button>
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-[9px] font-mono text-zinc-500 tracking-[0.2em] uppercase font-bold">
-              {isRoot ? 'ROOT_ACCESS' : 'USER_SESSION'} — KALI
-            </span>
-          </div>
-        </div>
+      {isClosed ? (
+        <section className="relative w-full bg-background border-t border-surface flex flex-col items-center justify-center py-32 z-30">
+          <button 
+            onClick={initTerminal} 
+            className="group flex items-center gap-4 px-8 py-4 border border-[var(--red-main)] text-[var(--red-main)] font-mono text-sm tracking-[0.2em] uppercase bg-transparent hover:bg-[var(--red-soft)] hover:border-[var(--red-hover)] hover:shadow-[0_0_15px_var(--red-soft)] active:scale-[0.97] transition-all duration-300 rounded-sm"
+          >
+            <span className="font-black text-lg leading-none">{`>_`}</span>
+            Initialize Terminal
+          </button>
+        </section>
+      ) : (
+        <section className="relative w-full bg-background border-t border-surface flex flex-col items-center py-20 px-3 sm:px-6 z-30">
+          <div 
+            ref={wrapperRef}
+            onClick={() => { if (!isBooting) inputRef.current?.focus() }}
+            className={`border border-[var(--border-terminal)] flex flex-col relative overflow-x-hidden bg-[var(--bg-terminal)] shadow-xl rounded-sm
+            ${isMaximized 
+              ? 'w-full h-[100dvh] rounded-none border-none' 
+              : 'w-full max-w-4xl h-[calc(100dvh-80px)] sm:h-[500px]'}
+            ${isMinimized ? 'h-12 opacity-50 overflow-hidden' : ''}`}
+          >
 
-        {/* INTELLIGENCE PANEL (Live Data) */}
-        {!isMinimized && (
-          <div className="absolute top-12 right-4 text-[10px] font-mono text-zinc-500 space-y-1 z-30 text-right pointer-events-none hidden sm:block">
-            <div>cmds: {analytics.totalCommands}</div>
-            <div>last: {analytics.lastCommand || "none"}</div>
-          </div>
-        )}
-
-        {/* TERMINAL CONTENT */}
-        {!isMinimized && (
-          <div ref={terminalRef} className="flex-1 overflow-y-auto p-4 sm:p-8 font-mono text-[13px] sm:text-[14px] custom-scrollbar z-20" onClick={() => inputRef.current?.focus()}>
-            
-            {history.map((item, i) => {
-              // Dynamic visual feedback based on output content
-              const isError = item.output.includes("Unknown command") || item.output.includes("usage:");
-              const outputColor = item.output === "processing..." ? "text-zinc-500 animate-pulse" : isError ? "text-red-400" : "text-cyan-400";
-              
-              return (
-                <div key={i} className="mb-6">
-                  <div className="flex flex-col">
-                    <div className="flex gap-1 items-center font-bold">
-                      <span className="text-white/30 tracking-tighter">┌──(</span>
-                      <span className={item.isRoot ? "text-[#32ff7e]" : "text-red-500"}>{item.isRoot ? "root" : "jothish"}㉿kali</span>
-                      <span className="text-white/30 tracking-tighter">)-[~]</span>
-                    </div>
-                    <div className="flex gap-2 font-bold">
-                      <span className="text-white/30 tracking-tighter">└─{item.isRoot ? "#" : "$"}</span>
-                      <span className="text-white break-all">{item.command}</span>
-                    </div>
-                  </div>
-                  <pre className={`mt-2 ml-6 font-medium whitespace-pre-wrap leading-relaxed ${outputColor}`}>
-                    {item.output}
-                  </pre>
+            {/* HEADER */}
+            <div className="relative flex flex-col bg-[var(--bg-terminal)] border-b border-[var(--border-terminal)] z-30">
+              <div className="flex items-center px-4 py-2.5">
+                <div className="flex items-center gap-2 z-20">
+                  <button onClick={() => setIsClosed(true)} className="w-3 h-3 rounded-full bg-[var(--red-main)] flex items-center justify-center opacity-80 hover:opacity-100">
+                    <X size={8} className="text-white opacity-0 hover:opacity-100 transition-opacity" />
+                  </button>
+                  <button onClick={() => setIsMinimized(!isMinimized)} className="w-3 h-3 rounded-full bg-[var(--warning)] flex items-center justify-center opacity-80 hover:opacity-100">
+                    <Minus size={8} className="text-white opacity-0 hover:opacity-100 transition-opacity" />
+                  </button>
+                  <button onClick={toggleFullscreen} className="w-3 h-3 rounded-full bg-[var(--green-root)] flex items-center justify-center opacity-80 hover:opacity-100">
+                    <Maximize2 size={8} className="text-white opacity-0 hover:opacity-100 transition-opacity" />
+                  </button>
                 </div>
-              );
-            })}
-
-            {/* STICKY INPUT WRAPPER (MOBILE UX FIX) */}
-            <div className="sticky bottom-0 bg-[#050505] pt-2 pb-4 flex flex-col z-30">
-              <div className="flex gap-1 items-center font-bold">
-                <span className="text-white/30 tracking-tighter">┌──(</span>
-                <span className={isRoot ? "text-[#32ff7e]" : "text-red-500"}>{isRoot ? "root" : "jothish"}㉿kali</span>
-                <span className="text-white/30 tracking-tighter">)-[~]</span>
-              </div>
-              <div className="flex gap-2 items-center font-bold relative group">
-                <span className="text-white/30 tracking-tighter">└─{isRoot ? "#" : "$"}</span>
-                <div className="flex items-center flex-1 bg-transparent transition-colors">
-                  <input 
-                    ref={inputRef} 
-                    value={input} 
-                    onChange={(e) => setInput(e.target.value)} 
-                    onKeyDown={handleKeyDown} 
-                    className="bg-transparent outline-none flex-1 text-white caret-red-500 text-[16px] sm:text-[14px] py-3 px-2" 
-                    autoComplete="off" 
-                    spellCheck={false} 
-                  />
-                  {/* Subtle Typing Cursor */}
-                  <span className="text-cyan-500 animate-pulse font-light absolute left-0 pointer-events-none" style={{ transform: `translateX(${input.length * 8.5 + 32}px)` }}>
-                    |
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-[10px] font-mono text-[var(--text-dim)] tracking-wider">
+                    kali@terminal
                   </span>
                 </div>
               </div>
-              
-              {/* LIVE COMMAND SUGGESTION */}
-              {currentSuggestion && (
-                <div className="text-[10px] text-zinc-500 ml-6 tracking-widest uppercase">
-                  suggestion: <span className="text-cyan-500/50">{currentSuggestion}</span> (tab to complete)
-                </div>
-              )}
+
+              <div className="flex gap-2 px-3 py-1 bg-[var(--bg-terminal)] border-t border-[var(--border-terminal)] overflow-x-auto custom-scrollbar">
+                {tabs.map((t, i) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setActiveTab(i);
+                      setHistoryIndex(-1);
+                      setInput("");
+                    }}
+                    className={`px-3 py-1 text-[10px] font-mono whitespace-nowrap transition-colors ${
+                      activeTab === i
+                        ? "text-[var(--red-main)] border-b border-[var(--red-main)]"
+                        : "text-[var(--text-dim)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    tab {t.id}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setTabs([...tabs, { id: tabs.length + 1, history: [], isRoot: false }])}
+                  className="text-[var(--text-dim)] hover:text-[var(--text-primary)] px-2 font-mono"
+                >
+                  +
+                </button>
+              </div>
             </div>
-            
-          </div>
-        )}
 
-        {/* FOOTER */}
-        <div className="px-5 py-2 bg-zinc-900/50 border-t border-white/5 flex justify-between items-center z-30">
-          <div className="flex gap-4 items-center">
-            <button onClick={() => { navigator.clipboard.writeText("jothishgandham2@gmail.com"); setCopied(true); setTimeout(()=>setCopied(false),1000)}} className="text-[9px] text-zinc-500 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1 cursor-pointer">
-              <Copy size={10} /> {copied ? "Copied" : "Copy Email"}
-            </button>
-            <a href="https://github.com/jothish-blip" target="_blank" rel="noreferrer" className="text-[9px] text-zinc-500 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1 cursor-pointer">
-              <SiGithub size={10} /> GitHub
-            </a>
-          </div>
-          <span className="text-[9px] text-zinc-600 font-mono hidden sm:block italic">"Understanding how they break to build them better."</span>
-        </div>
-      </div>
+            {/* INTELLIGENCE PANEL */}
+            {!isMinimized && !isBooting && (
+              <div className="absolute top-20 right-4 text-[10px] font-mono text-[var(--text-dim)] space-y-1 z-30 text-right pointer-events-none hidden sm:block">
+                <div>cmds: {analytics.totalCommands}</div>
+                <div>last: {analytics.lastCommand || "none"}</div>
+              </div>
+            )}
 
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
-      `}</style>
-    </section>
+            {/* TERMINAL CONTENT */}
+            {!isMinimized && (
+              <div ref={terminalRef} className="flex-1 overflow-y-auto p-4 sm:p-6 font-mono text-[13px] sm:text-[14px] custom-scrollbar z-20">
+                
+                {activeHistory.map((item, i) => {
+                  const isError = item.output.includes("Unknown command") || item.output.includes("usage:");
+                  
+                  const outputColor = item.output === "processing..." 
+                    ? "text-[var(--text-dim)] animate-pulse" 
+                    : isError 
+                      ? "text-[var(--red-main)]" 
+                      : "text-[var(--text-primary)]";
+                  
+                  return (
+                    <div key={i} className="mb-6">
+                      {item.command && (
+                        <div className="text-[13px] font-mono leading-tight mb-1">
+                          <div className="flex gap-1">
+                            <span className="text-[var(--text-dim)]">┌──(</span>
+                            <span className={item.isRoot ? "text-[var(--green-root)]" : "text-[var(--red-main)]"}>
+                              {item.isRoot ? "root" : "jothish"}
+                            </span>
+                            <span className="text-[var(--text-dim)]">㉿kali)-[~]</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="text-[var(--text-dim)]">└─{item.isRoot ? "#" : "$"}</span>
+                            <span className="text-[var(--text-primary)]">{item.command}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <pre className={`mt-1 ml-4 font-medium whitespace-pre-wrap leading-relaxed ${outputColor}`}>
+                        {item.output}
+                      </pre>
+                    </div>
+                  );
+                })}
+
+                {/* STICKY INPUT WRAPPER */}
+                {!isBooting && (
+                  <div className="sticky bottom-0 bg-[var(--bg-terminal)] pt-2 pb-4 flex flex-col z-30">
+                    <div className="text-[13px] font-mono leading-tight">
+                      <div className="flex gap-1">
+                        <span className="text-[var(--text-dim)]">┌──(</span>
+                        <span className={isRoot ? "text-[var(--green-root)]" : "text-[var(--red-main)]"}>
+                          {isRoot ? "root" : "jothish"}
+                        </span>
+                        <span className="text-[var(--text-dim)]">㉿kali)-[~]</span>
+                      </div>
+                      
+                      <div className="flex gap-2 items-center relative">
+                        <span className="text-[var(--text-dim)]">└─{isRoot ? "#" : "$"}</span>
+                        
+                        <div className="flex items-center flex-1 bg-transparent relative">
+                          <input 
+                            ref={inputRef} 
+                            value={input} 
+                            onChange={(e) => {
+                              setInput(e.target.value);
+                              if (audioRef.current) {
+                                audioRef.current.currentTime = 0;
+                                audioRef.current.play().catch(() => {});
+                              }
+                            }} 
+                            onKeyDown={handleKeyDown} 
+                            onBlur={(e) => {
+                              const target = e.target;
+                              setTimeout(() => target.focus(), 10);
+                            }}
+                            autoFocus
+                            className="bg-transparent flex-1 text-[var(--text-primary)] text-[13px] sm:text-[14px] py-1 px-1 border-none outline-none focus:outline-none focus:ring-0 focus:border-none appearance-none z-10" 
+                            style={{ caretColor: 'transparent' }}
+                            autoComplete="off" 
+                            spellCheck={false} 
+                          />
+                          
+                          <span 
+                            className="absolute inline-block w-[8px] h-[16px] bg-[var(--red-main)] animate-pulse z-0 pointer-events-none"
+                            style={{ left: `calc(${input.length}ch + 4px)` }}
+                          ></span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* LIVE COMMAND SUGGESTION */}
+                    {suggestions.length > 0 && (
+                      <div className="mt-2 ml-4 space-y-1">
+                        {suggestions.map((s, i) => (
+                          <div key={i} className="text-[10px] text-[var(--text-dim)] tracking-widest uppercase">
+                            → <span className="text-[var(--red-main)] opacity-70">{s}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+              </div>
+            )}
+
+            {/* FOOTER */}
+            <div className="px-5 py-2 bg-[var(--bg-terminal)] border-t border-[var(--border-terminal)] flex justify-between items-center z-30">
+              <div className="flex gap-4 items-center">
+                <button onClick={() => { navigator.clipboard.writeText("jothishgandham2@gmail.com"); setCopied(true); setTimeout(()=>setCopied(false),1000)}} className="text-[9px] text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors uppercase tracking-widest flex items-center gap-1 cursor-pointer">
+                  <Copy size={10} /> {copied ? "Copied" : "Copy Email"}
+                </button>
+                <a href="https://github.com/jothish-blip" target="_blank" rel="noreferrer" className="text-[9px] text-[var(--text-dim)] hover:text-[var(--text-primary)] transition-colors uppercase tracking-widest flex items-center gap-1 cursor-pointer">
+                  <SiGithub size={10} /> GitHub
+                </a>
+              </div>
+              <span className="text-[9px] text-[var(--text-dim)] font-mono hidden sm:block italic">Understanding systems to build them better.</span>
+            </div>
+          </div>
+        </section>
+      )}
+    </>
   );
 }

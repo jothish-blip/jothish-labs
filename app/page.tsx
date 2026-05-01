@@ -8,50 +8,58 @@ import Navbar from "@/components/ui/Navbar";
 
 export default function Home() {
   return (
-    <main className="bg-[#020202] text-white overflow-x-hidden scroll-smooth selection:bg-cyan-500/30">
+    /* 1 & 5. Theme-aware colors and selection highlighting */
+    <main className="bg-background text-foreground overflow-x-hidden scroll-smooth selection:bg-[var(--accent-soft)] selection:text-[var(--accent)]">
       
       {/* Fixed Navbar handles its own z-index */}
       <Navbar />
 
-      {/* HERO SECTION 
-          Using min-h-screen instead of h-screen prevents content 
-          from collapsing on smaller mobile devices.
+      {/* 4. HERO SECTION 
+          Using min-h-[100dvh] ensures perfect height on mobile browsers 
+          while remaining responsive to the global theme.
       */}
-      <div id="hero" className="relative min-h-screen w-full border-b border-white/[0.02]">
+      <section id="hero" className="relative min-h-[100dvh] w-full border-b border-surface">
         <Hero />
-      </div>
+      </section>
 
-      {/* CONTENT SECTIONS
-          We remove the extra <div> wrappers and flex-center logic here
-          because your individual components (About, Projects, etc.) 
-          already handle their own internal spacing and centering.
+      {/* 2 & 3. SEMANTIC CONTENT SECTIONS
+          Using <section> tags for SEO and standardized vertical padding (py-16)
+          to ensure a consistent visual rhythm as the user scrolls.
       */}
       
-      <div id="about" className="relative">
+      <section id="about" className="relative py-16 sm:py-24">
         <About />
-      </div>
+      </section>
 
-      <div id="projects" className="relative">
+      <section id="projects" className="relative py-16 sm:py-24">
         <Projects />
-      </div>
+      </section>
 
-      <div id="skills" className="relative">
+      <section id="skills" className="relative py-16 sm:py-24">
         <Skills />
-      </div>
+      </section>
 
-      <div id="terminal" className="relative">
+      {/* Terminal section acts as an interactive lab space */}
+      <section id="terminal" className="relative py-16 sm:py-24">
         <Terminal />
-      </div>
+      </section>
 
-      <div id="contact" className="relative">
+      <section id="contact" className="relative py-16 sm:py-24">
         <Contact />
-      </div>
+      </section>
 
-      {/* Optional: Subtle global footer or bottom spacer */}
-      <footer className="py-10 bg-[#020202] border-t border-white/[0.02] text-center">
-        <p className="font-mono text-[8px] text-zinc-800 uppercase tracking-[0.5em]">
-          End of Dossier // Data Secure
-        </p>
+      {/* 6. CLEAN MINIMAL FOOTER 
+          Replaced "Dossier" text with a professional, theme-respecting copyright block.
+      */}
+      <footer className="py-12 border-t border-surface text-center bg-background">
+        <div className="max-w-6xl mx-auto px-6 space-y-4">
+           <p className="font-mono text-[10px] text-muted tracking-[0.4em] uppercase">
+            Built with focus on security & systems
+          </p>
+          <p className="text-[11px] text-muted/60 font-mono">
+            © {new Date().getFullYear()} Jothish Gandham • All rights reserved
+          </p>
+        </div>
       </footer>
 
     </main>
