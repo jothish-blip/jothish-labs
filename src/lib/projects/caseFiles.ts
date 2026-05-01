@@ -3,29 +3,29 @@ import { CaseData } from "./types";
 export const caseFiles: CaseData[] = [
   {
     id: "CASE-BT01",
-    category: "SECURITY_AUDIT",
+    category: "Security Audit",
     title: "Botium Toys Audit",
-    status: "CRITICAL_RISK",
-    riskScore: "8/10",
-    riskLevel: "HIGH",
+    status: "High Risk",
+    riskScore: 8,
+    riskLevel: "High",
     vulnerabilities: 4,
-    controlsFailed: 4,
-    description: "Comprehensive security audit for Botium Toys to assess assets, internal networks, and compliance posture against NIST CSF.",
-    investigationNotes: "The audit revealed a high-risk score due to inadequate asset management and lack of core technical controls. Key vulnerabilities include unencrypted PII/SPII and absent disaster recovery protocols.",
+    failedControls: 4,
+    description: "Comprehensive security audit for Botium Toys assessing assets, internal networks, and compliance posture against NIST CSF.",
+    summary: "The audit revealed a high-risk score due to inadequate asset management and lack of core technical controls. Key vulnerabilities include unencrypted PII/SPII and absent disaster recovery protocols.",
     timeline: [
-      { title: "Scope Definition", desc: "Established audit boundaries aligning with NIST CSF standards.", tag: "COMPLIANCE" },
-      { title: "Asset Discovery", desc: "Mapped internal network assets and identified shadow IT components.", tag: "RECON" },
-      { title: "Vulnerability Scan", desc: "Detected plaintext PII storage and missing core technical controls.", tag: "SCAN" },
-      { title: "Control Assessment", desc: "Evaluated firewall, IDS, and disaster recovery implementations.", tag: "AUDIT" },
-      { title: "Findings & Reporting", desc: "Compiled critical risk register and actionable mitigation plan.", tag: "RESULT" }
+      { title: "Scope Definition", desc: "Established audit boundaries aligning with NIST CSF standards.", tag: "Compliance" },
+      { title: "Asset Discovery", desc: "Mapped internal network assets and identified shadow IT components.", tag: "Reconnaissance" },
+      { title: "Vulnerability Scan", desc: "Detected plaintext PII storage and missing core technical controls.", tag: "Scan" },
+      { title: "Control Assessment", desc: "Evaluated firewall, IDS, and disaster recovery implementations.", tag: "Audit" },
+      { title: "Findings & Reporting", desc: "Compiled critical risk register and actionable mitigation plan.", tag: "Result" }
     ],
     checklist: [
-      { control: "Firewall", status: "YES", note: "Security rules defined" },
-      { control: "Antivirus Software", status: "YES", note: "Monitored regularly" },
-      { control: "Least Privilege", status: "NO", note: "Unrestricted internal data access" },
-      { control: "Data Encryption", status: "NO", note: "Local PII stored in plaintext" },
-      { control: "Intrusion Detection", status: "NO", note: "IDS not implemented" },
-      { control: "Disaster Recovery", status: "NO", note: "No backups or recovery plan" },
+      { control: "Firewall", status: "Verified", note: "Security rules defined" },
+      { control: "Antivirus Software", status: "Verified", note: "Monitored regularly" },
+      { control: "Least Privilege", status: "Failed", note: "Unrestricted internal data access" },
+      { control: "Data Encryption", status: "Failed", note: "Local PII stored in plaintext" },
+      { control: "Intrusion Detection", status: "Failed", note: "IDS not implemented" },
+      { control: "Disaster Recovery", status: "Failed", note: "No backups or recovery plan" },
     ],
     recommendations: [
       "Enforce Least Privilege and Separation of Duties.",
@@ -34,34 +34,34 @@ export const caseFiles: CaseData[] = [
       "Develop a Disaster Recovery and Backup strategy."
     ],
     assets: [
-      { name: "Open_Full_Audit.pdf", type: "pdf", url: "/reports/botium-risk.pdf", isPrimary: true },
-      { name: "Download_Checklist.pdf", type: "pdf", url: "/reports/botium-checklist.pdf", isPrimary: false }
+      { name: "Full Audit Report", type: "pdf", url: "/reports/botium-risk.pdf", isPrimary: true },
+      { name: "Checklist", type: "pdf", url: "/reports/botium-checklist.pdf", isPrimary: false }
     ]
   },
   {
     id: "CASE-DNS02",
-    category: "NETWORK_ANALYSIS",
+    category: "Network Analysis",
     title: "DNS Failure Analysis",
-    status: "INVESTIGATED",
-    riskScore: "6/10",
-    riskLevel: "MODERATE",
+    status: "Investigated",
+    riskScore: 6,
+    riskLevel: "Moderate",
     vulnerabilities: 2,
-    controlsFailed: 1,
-    description: "Analyze network traffic using tcpdump to identify why a website was unreachable. Focus on ICMP & UDP protocol investigation.",
-    investigationNotes: "Users reported that the website was not loading, showing the error 'Destination port unreachable'. Traffic analysis revealed that the system sent DNS requests using UDP (port 53), but the DNS server responded with an ICMP error ('port 53 unreachable'). This indicates the DNS service was not accessible.",
+    failedControls: 1,
+    description: "Analyzed network traffic using tcpdump to determine why the website was unreachable. Focus on ICMP & UDP protocol investigation.",
+    summary: "Users reported that the website was not loading, showing the error 'Destination port unreachable'. Traffic analysis revealed that the system sent DNS requests using UDP (port 53), but the DNS server responded with an ICMP error ('port 53 unreachable'). This indicates the DNS service was not accessible.",
     timeline: [
-      { title: "Alert Received", desc: "Users reported destination port unreachable errors on web access.", tag: "INCIDENT" },
-      { title: "Packet Capture", desc: "Initiated tcpdump to monitor and log active network traffic.", tag: "TCPDUMP" },
-      { title: "UDP Inspection", desc: "Isolated outbound DNS requests communicating over UDP port 53.", tag: "PROTOCOL" },
-      { title: "ICMP Analysis", desc: "Identified returning ICMP error messages confirming port 53 was unreachable.", tag: "ERROR" },
-      { title: "Root Cause Identified", desc: "Determined DNS service outage was responsible for network failure.", tag: "RESULT" }
+      { title: "Alert Received", desc: "Users reported destination port unreachable errors on web access.", tag: "Incident" },
+      { title: "Packet Capture", desc: "Initiated tcpdump to monitor and log active network traffic.", tag: "Packet Capture" },
+      { title: "UDP Inspection", desc: "Isolated outbound DNS requests communicating over UDP port 53.", tag: "Protocol Analysis" },
+      { title: "ICMP Analysis", desc: "Identified returning ICMP error messages confirming port 53 was unreachable.", tag: "Error" },
+      { title: "Root Cause Identified", desc: "Determined DNS service outage was responsible for network failure.", tag: "Result" }
     ],
     checklist: [
-      { control: "tcpdump Capture", status: "YES", note: "Network traffic successfully captured" },
-      { control: "UDP Inspection", status: "YES", note: "Identified port 53 requests" },
-      { control: "ICMP Analysis", status: "YES", note: "Error response confirmed" },
-      { control: "DNS Service", status: "NO", note: "Service down or unreachable" },
-      { control: "Firewall Config", status: "NO", note: "Potential block on port 53" },
+      { control: "tcpdump Capture", status: "Verified", note: "Network traffic successfully captured" },
+      { control: "UDP Inspection", status: "Verified", note: "Identified port 53 requests" },
+      { control: "ICMP Analysis", status: "Verified", note: "Error response confirmed" },
+      { control: "DNS Service", status: "Failed", note: "Service down or unreachable" },
+      { control: "Firewall Config", status: "Failed", note: "Potential block on port 53" },
     ],
     recommendations: [
       "Restart the DNS service.",
@@ -70,34 +70,34 @@ export const caseFiles: CaseData[] = [
       "Implement continuous monitoring for DNS availability."
     ],
     assets: [
-      { name: "View_Traffic_Log.png", type: "image", url: "/reports/tcpdump-screenshot.png", isPrimary: true },
-      { name: "Open_Analysis_Doc.pdf", type: "pdf", url: "/reports/dns-analysis.pdf", isPrimary: false }
+      { name: "Traffic Log", type: "image", url: "/reports/tcpdump-screenshot.png", isPrimary: true },
+      { name: "Analysis Document", type: "pdf", url: "/reports/dns-analysis.pdf", isPrimary: false }
     ]
   },
   {
     id: "CASE-LNX03",
-    category: "LINUX_SECURITY",
+    category: "Linux Security",
     title: "Linux Permissions Hardening",
-    status: "SECURED",
-    riskScore: "7/10",
-    riskLevel: "HIGH",
+    status: "Secured",
+    riskScore: 7,
+    riskLevel: "High",
     vulnerabilities: 3,
-    controlsFailed: 3,
-    description: "System-wide audit and remediation of Linux file permissions to enforce the Principle of Least Privilege (PoLP).",
-    investigationNotes: "Initial system scan revealed critical directory vulnerabilities where 'Others' and 'Group' had unauthorized write access. Sensitive hidden project files were exposed to the entire user environment. Remediation involved recursive permission stripping and specific owner-only locks.",
+    failedControls: 3,
+    description: "Performed a system-wide audit and remediation of Linux file permissions to enforce the Principle of Least Privilege (PoLP).",
+    summary: "Initial system scan revealed critical directory vulnerabilities where 'Others' and 'Group' had unauthorized write access. Sensitive hidden project files were exposed to the entire user environment. Remediation involved recursive permission stripping and specific owner-only locks.",
     timeline: [
-      { title: "Scan Initiated", desc: "Executed ls -la to perform a comprehensive directory permission audit.", tag: "AUDIT" },
-      { title: "Vulnerability Mapped", desc: "Identified exposed hidden files and unauthorized group write access.", tag: "EXPOSURE" },
-      { title: "Permission Stripping", desc: "Recursively removed 'others' write privileges across project files.", tag: "CHMOD" },
-      { title: "Owner Locks Applied", desc: "Secured hidden .project files strictly to owner-only access.", tag: "SECURE" },
-      { title: "Verification", desc: "Confirmed PoLP enforcement across all targeted system directories.", tag: "RESULT" }
+      { title: "Scan Initiated", desc: "Used ls -la to audit directory permissions across the system.", tag: "Audit" },
+      { title: "Vulnerability Mapped", desc: "Identified exposed hidden files and unauthorized group write access.", tag: "Exposure" },
+      { title: "Permission Stripping", desc: "Recursively removed 'others' write privileges across project files.", tag: "Chmod" },
+      { title: "Owner Locks Applied", desc: "Secured hidden .project files strictly to owner-only access.", tag: "Secure" },
+      { title: "Verification", desc: "Confirmed PoLP enforcement across all targeted system directories.", tag: "Result" }
     ],
     checklist: [
-      { control: "Permission Audit", status: "YES", note: "Used ls -la to map vulnerabilities" },
-      { control: "Group Write Lock", status: "YES", note: "chmod g-w enforced on project root" },
-      { control: "Others Access Strip", status: "YES", note: "chmod o-w applied to system drafts" },
-      { control: "Hidden File Shield", status: "YES", note: ".project_x.txt restricted to owner" },
-      { control: "Dir Access Control", status: "YES", note: "Restricted drafts directory to 700" },
+      { control: "Permission Audit", status: "Verified", note: "Used ls -la to map vulnerabilities" },
+      { control: "Group Write Lock", status: "Verified", note: "chmod g-w enforced on project root" },
+      { control: "Others Access Strip", status: "Verified", note: "chmod o-w applied to system drafts" },
+      { control: "Hidden File Shield", status: "Verified", note: ".project_x.txt restricted to owner" },
+      { control: "Dir Access Control", status: "Verified", note: "Restricted drafts directory to 700" },
     ],
     recommendations: [
       "Implement automated cron jobs to audit file permissions weekly.",
@@ -106,20 +106,20 @@ export const caseFiles: CaseData[] = [
       "Enforce umask settings to prevent insecure default permissions."
     ],
     assets: [
-      { name: "Open_Security_Report.pdf", type: "pdf", url: "/linux/project.pdf", isPrimary: true }
+      { name: "Security Report", type: "pdf", url: "/linux/project.pdf", isPrimary: true }
     ]
   },
   {
     id: "CASE-SQL04",
-    category: "THREAT_ANALYSIS",
+    category: "Threat Analysis",
     title: "SQL Login Activity Analysis",
-    status: "INVESTIGATED",
-    riskScore: "7/10",
-    riskLevel: "HIGH",
+    status: "Investigated",
+    riskScore: 7,
+    riskLevel: "High",
     vulnerabilities: 3,
-    controlsFailed: 2,
-    description: "Security-focused SQL investigation analyzing login attempts and employee records using logical filters (AND, OR, NOT).",
-    investigationNotes: "The analysis focused on identifying suspicious login behavior and system vulnerabilities using SQL queries. By applying logical operators, multiple anomalies were detected including after-hours failed logins, unusual geographic access patterns, and department-based system exposure. Pattern matching and conditional filtering helped isolate high-risk activities effectively.",
+    failedControls: 2,
+    description: "Security-focused SQL analysis of login attempts and employee records using logical filters (AND, OR, NOT).",
+    summary: "The analysis focused on identifying suspicious login behavior and system vulnerabilities using SQL queries. By applying logical operators, multiple anomalies were detected including after-hours failed logins, unusual geographic access patterns, and department-based system exposure. Pattern matching and conditional filtering helped isolate high-risk activities effectively.",
     playback: [
       {
         step: "01",
@@ -154,7 +154,7 @@ export const caseFiles: CaseData[] = [
         intent: "Exclude known secure locations (Mexico headquarters) to detect anomalous external access points using wildcards.",
         query: `SELECT user_id, country, status \nFROM log_in_attempts \nWHERE NOT country LIKE 'MEX%';`,
         delta: "Removed MEX entries (8 → 3 records)",
-        anomaly: "⚠ ANOMALY DETECTED: High concentration of targeted failed logins originating from non-MEX external regions.",
+        anomaly: "Anomaly detected: High concentration of targeted failed logins originating from non-MEX external regions.",
         logs: ["[LOG] NOT LIKE pattern executed", "[LOG] Internal IP ranges excluded", "[LOG] External threat signatures identified"],
         linkedControl: "Geolocation Filtering",
         resultRows: [
@@ -178,12 +178,12 @@ export const caseFiles: CaseData[] = [
       }
     ],
     checklist: [
-      { control: "After-hours Login Detection", status: "YES", note: "Filtered failed logins after 18:00" },
-      { control: "Date-based Filtering", status: "YES", note: "Identified activity on May 8 & 9" },
-      { control: "Geolocation Filtering", status: "YES", note: "Excluded Mexico using NOT + LIKE" },
-      { control: "Department Filtering", status: "YES", note: "Marketing & East building isolated" },
-      { control: "Multi-condition Queries", status: "YES", note: "Used AND / OR effectively" },
-      { control: "Advanced Correlation", status: "NO", note: "No JOIN operations applied" },
+      { control: "After-hours Login Detection", status: "Verified", note: "Filtered failed logins after 18:00" },
+      { control: "Date-based Filtering", status: "Verified", note: "Identified activity on May 8 & 9" },
+      { control: "Geolocation Filtering", status: "Verified", note: "Excluded Mexico using NOT + LIKE" },
+      { control: "Department Filtering", status: "Verified", note: "Marketing & East building isolated" },
+      { control: "Multi-condition Queries", status: "Verified", note: "Used AND / OR effectively" },
+      { control: "Advanced Correlation", status: "Failed", note: "No JOIN operations applied" },
     ],
     recommendations: [
       "Implement real-time monitoring for after-hours login attempts.",
@@ -192,8 +192,8 @@ export const caseFiles: CaseData[] = [
       "Integrate SQL analysis with SIEM tools for better visibility."
     ],
     assets: [
-      { name: "Open_SQL_Report.pdf", type: "pdf", url: "/sql/SQL-report.pdf", isPrimary: true },
-      { name: "View_Table_Formats.pdf", type: "pdf", url: "/sql/table-formats.pdf", isPrimary: false }
+      { name: "SQL Report", type: "pdf", url: "/sql/SQL-report.pdf", isPrimary: true },
+      { name: "Table Formats", type: "pdf", url: "/sql/table-formats.pdf", isPrimary: false }
     ]
   }
 ];
