@@ -11,51 +11,47 @@ export default function Checklist({ checklist, linkedControl }: Props) {
   const [showAllChecks, setShowAllChecks] = useState(false);
 
   return (
-    <>
-      {/* 2. Dark / Light Mode Global Tokens */}
-      <style jsx global>{`
-        :root {
-          --accent: #0891b2;
-          --accent-soft: rgba(8, 145, 178, 0.08);
-          --success: #059669;
-          --danger: #dc2626;
-        }
-        html.dark {
-          --accent: #22d3ee;
-          --accent-soft: rgba(34, 211, 238, 0.1);
-          --success: #10b981;
-          --danger: #ef4444;
-        }
-      `}</style>
-
-      <div className="space-y-4">
-        {/* 1. Remove Fake/System Wording */}
-        <h4 className="font-mono text-[10px] text-muted tracking-widest uppercase">
-          Controls Verification
-        </h4>
+    <div className="space-y-4">
+      {/* Improved Section Title */}
+      <h4 className="font-mono text-[9px] text-muted uppercase tracking-widest">
+        control validation
+      </h4>
+      
+      {/* Improved Container Depth */}
+      <div className="bg-surface/80 backdrop-blur-sm rounded-sm border border-surface flex flex-col">
         
-        <div className="bg-surface rounded-sm py-1 border border-surface">
+        {/* Summary Row */}
+        <div className="px-4 py-2 text-[9px] font-mono text-muted border-b border-surface/60 flex justify-between shrink-0">
+          <span>controls checked</span>
+          <span>
+            {checklist.filter(c => c.status === "YES").length} / {checklist.length}
+          </span>
+        </div>
+
+        {/* Scrollable Container */}
+        <div className="max-h-[280px] overflow-y-auto">
           {(showAllChecks ? checklist : checklist.slice(0, 4)).map((item, i) => {
             const isLinked = linkedControl === item.control;
+            
             return (
-              <div 
-                key={i} 
-                // 5 & 8. Softer row highlight and improved hover states
-                className={`flex items-center justify-between px-4 py-3 border-b border-surface last:border-0 transition-colors duration-500 ${
+              // Improved Row Structure & Linked Highlight
+              <div
+                key={i}
+                className={`flex items-center justify-between px-4 py-3 border-b border-surface/60 last:border-0 transition-colors duration-500 ${
                   isLinked 
-                    ? "bg-[var(--accent-soft)] border-l border-l-[var(--accent)]" 
+                    ? "bg-[var(--accent-soft)] border-l-2 border-l-[var(--accent)]" 
                     : "hover:bg-surface-strong/80"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {/* 4. Toned down highlight: Removed pulse, softened shadow, theme variables */}
-                  <div className={`w-1.5 h-1.5 rounded-full ${
+                  {/* Improved Dot Indicator */}
+                  <div className={`w-2 h-2 rounded-full ${
                     item.status === "YES" ? "bg-[var(--success)]" : "bg-[var(--danger)]"
-                  } ${isLinked && "shadow-[0_0_4px_currentColor]"}`} />
+                  } ${isLinked ? "shadow-[0_0_6px_currentColor]" : ""}`} />
                   
                   <div>
-                    {/* 6 & 9. Bumped to 12px, better visual hierarchy for unlinked text */}
-                    <p className={`text-[12px] font-bold tracking-tight transition-colors ${
+                    {/* Improved Text Hierarchy */}
+                    <p className={`text-[12px] font-semibold tracking-tight transition-colors ${
                       isLinked ? "text-[var(--accent)]" : "text-foreground/80"
                     }`}>
                       {item.control}
@@ -66,27 +62,29 @@ export default function Checklist({ checklist, linkedControl }: Props) {
                   </div>
                 </div>
                 
-                {/* 3. Improved Wording: Verified/Failed instead of PASS/FAIL */}
-                <span className={`font-mono text-[9px] px-2 py-1 tracking-widest uppercase ${
-                  item.status === "YES" ? "text-[var(--success)]" : "text-[var(--danger)]"
+                {/* Improved Status Badge */}
+                <span className={`text-[8px] font-mono px-2 py-1 border uppercase tracking-widest rounded-sm ${
+                  item.status === "YES"
+                    ? "border-[var(--success)]/30 text-[var(--success)] bg-[var(--success)]/10"
+                    : "border-[var(--danger)]/30 text-[var(--danger)] bg-[var(--danger)]/10"
                 }`}>
-                  {item.status === "YES" ? "Verified" : "Failed"}
+                  {item.status === "YES" ? "verified" : "failed"}
                 </span>
               </div>
             );
           })}
-          
-          {/* 7. Interaction Polish: Toggle expand/collapse, active feedback */}
-          {checklist.length > 4 && (
-            <button 
-              onClick={() => setShowAllChecks(!showAllChecks)}
-              className="w-full py-3 mt-1 text-[10px] font-mono text-muted hover:text-foreground hover:bg-surface transition-colors uppercase tracking-widest border-t border-surface active:scale-[0.98]"
-            >
-              {showAllChecks ? "Show Less" : `View ${checklist.length - 4} More`}
-            </button>
-          )}
         </div>
+        
+        {/* Improved Toggle Button */}
+        {checklist.length > 4 && (
+          <button 
+            onClick={() => setShowAllChecks(!showAllChecks)}
+            className="w-full py-2 text-[9px] font-mono text-muted hover:text-[var(--accent)] hover:bg-[var(--accent-soft)] transition uppercase tracking-widest border-t border-surface active:scale-[0.98] shrink-0"
+          >
+            {showAllChecks ? "collapse" : `expand +${checklist.length - 4}`}
+          </button>
+        )}
       </div>
-    </>
+    </div>
   );
 }

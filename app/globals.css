@@ -3,17 +3,15 @@
 /* ===== ROOT THEME (LIGHT) ===== */
 :root {
   color-scheme: light;
-
   --background: #ffffff;
   --foreground: #000000;
-
   --surface: #f5f7fb;
   --surface-strong: #e9eef5;
-
   --border: rgba(15, 23, 42, 0.08);
   --muted: #64748b;
-
-  --accent: #22d3ee;
+  --accent: #0891b2;
+  --accent-soft: rgba(8, 145, 178, 0.1);
+  --accent-grid: rgba(0, 0, 0, 0.04);
 
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -27,17 +25,15 @@
 /* ===== DARK MODE ===== */
 html.dark {
   color-scheme: dark;
-
   --background: #000000;
   --foreground: #e2e8f0;
-
   --surface: rgba(255, 255, 255, 0.04);
   --surface-strong: rgba(255, 255, 255, 0.08);
-
   --border: rgba(255, 255, 255, 0.1);
   --muted: #94a3b8;
-
   --accent: #22d3ee;
+  --accent-soft: rgba(34, 211, 238, 0.1);
+  --accent-grid: rgba(255, 255, 255, 0.012);
 }
 
 /* ===== BASE ===== */
@@ -49,23 +45,19 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
-
-  transition:
-    background var(--duration) var(--ease),
-    color var(--duration) var(--ease);
-
+  transition: background var(--duration) var(--ease), color var(--duration) var(--ease);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Subtle depth layer */
+/* Clean depth layer - Reduced from 0.06 to 0.03 to prevent muddy stacking */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   background: radial-gradient(
     circle at top,
-    rgba(34, 211, 238, 0.06),
+    rgba(34, 211, 238, 0.03),
     transparent 60%
   );
   pointer-events: none;
@@ -76,54 +68,43 @@ body::before {
 .bg-background { background: var(--background); }
 .bg-surface { background: var(--surface); }
 .bg-surface-strong { background: var(--surface-strong); }
-
 .text-foreground { color: var(--foreground); }
 .text-muted { color: var(--muted); }
-
 .border-surface { border-color: var(--border); }
 
-/* ===== SCROLLBAR ===== */
-::-webkit-scrollbar {
-  width: 6px;
+:root {
+  --selection-bg: rgba(34, 211, 238, 0.25);
 }
 
-::-webkit-scrollbar-track {
-  background: var(--background);
+.dark {
+  --selection-bg: rgba(34, 211, 238, 0.35);
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 999px;
-  transition: background 0.2s var(--ease);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(34, 211, 238, 0.7);
-}
-
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent) var(--background);
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* ===== INTERACTION ===== */
 ::selection {
-  background: rgba(34, 211, 238, 0.3);
-  color: #fff;
+  background: var(--selection-bg);
+  color: inherit;
 }
 
-:focus-visible {
-  outline: 1px solid rgba(34, 211, 238, 0.5);
-  outline-offset: 2px;
+h1::selection,
+h2::selection,
+h3::selection {
+  background: rgba(34, 211, 238, 0.4);
 }
 
-/* ===== SAFE AREA ===== */
-.pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
+code::selection,
+pre::selection {
+  background: rgba(250, 204, 21, 0.3);
 }
 
-/* ===== TRANSITIONS ===== */
-.transition-fast {
-  transition: all 0.2s var(--ease);
+/* ===== ANIMATIONS ===== */
+.animate-scan { animation: scan 4s linear infinite; }
+.animate-slowPulse { animation: slowPulse 3s ease-in-out infinite; }
+.animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+
+@keyframes scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateY(1000%); opacity: 0; }
 }
+@keyframes slowPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; backdrop-filter: blur(0px); } to { opacity: 1; backdrop-filter: blur(4px); } }

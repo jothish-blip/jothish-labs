@@ -1,4 +1,5 @@
 ﻿"use client";
+import React from "react";
 import { CaseData } from "@/lib/projects/types";
 
 interface Props {
@@ -12,20 +13,20 @@ const statusMap: Record<string, string> = {
   WARNING: "Moderate",
 };
 
-export default function CaseCard({ data, onOpen }: Props) {
+const CaseCard = ({ data, onOpen }: Props) => {
   
   const getStatusStyles = (status: string) => {
-    if (status === 'CRITICAL_RISK') return 'text-[var(--danger)] border-[var(--danger)]/30';
-    if (status === 'SECURED') return 'text-[var(--success)] border-[var(--success)]/30';
-    return 'text-[var(--warning)] border-[var(--warning)]/30';
+    if (status === 'CRITICAL_RISK') return 'text-[var(--danger)] border-[var(--danger)]/30 bg-[var(--danger)]/10';
+    if (status === 'SECURED') return 'text-[var(--success)] border-[var(--success)]/30 bg-[var(--success)]/10';
+    return 'text-[var(--warning)] border-[var(--warning)]/30 bg-[var(--warning)]/10';
   };
 
   const getRiskScoreColor = (score: number | string) => {
     const num = typeof score === 'string' ? parseInt(score, 10) : score;
-    if (isNaN(num)) return 'bg-muted'; // Progress bar uses bg-color
-    if (num >= 8) return 'bg-[var(--danger)] text-[var(--danger)]';
-    if (num >= 5) return 'bg-[var(--warning)] text-[var(--warning)]';
-    return 'bg-[var(--success)] text-[var(--success)]';
+    if (isNaN(num)) return 'bg-muted';
+    if (num >= 8) return 'bg-[var(--danger)]';
+    if (num >= 5) return 'bg-[var(--warning)]';
+    return 'bg-[var(--success)]';
   };
 
   const getRiskTextColor = (score: number | string) => {
@@ -43,77 +44,71 @@ export default function CaseCard({ data, onOpen }: Props) {
   const displayStatus = statusMap[data.status] || "Moderate";
 
   return (
-    <>
-      <style jsx global>{`
-        :root {
-          --danger: #dc2626;
-          --warning: #d97706;
-          --success: #059669;
-        }
-        html.dark {
-          --danger: #ef4444;
-          --warning: #f59e0b;
-          --success: #10b981;
-        }
-      `}</style>
+    <div 
+      onClick={() => onOpen(data)}
+      className="group relative max-w-4xl mx-auto border border-surface bg-surface p-5 sm:p-6 flex flex-col justify-between transition-all duration-300 cursor-pointer hover:border-[var(--projects-accent)]/50 hover:bg-surface-strong/80 shadow-sm hover:shadow-xl hover:-translate-y-1 rounded-md"
+    >
+      {/* 2. Status Badge (Top-Right Anchor) */}
+      <span className={`absolute top-4 right-4 text-[8px] font-mono px-2 py-1 border uppercase tracking-widest rounded-sm ${getStatusStyles(data.status)}`}>
+        {displayStatus}
+      </span>
 
-      {/* 2. Professional Layout: Max-width and centering */}
-      <div 
-        onClick={() => onOpen(data)}
-        className="group max-w-4xl mx-auto border border-surface bg-surface p-4 sm:p-5 flex flex-col sm:flex-row justify-between sm:items-center gap-5 transition-all duration-200 cursor-pointer hover:border-[var(--accent)]/40 hover:bg-surface-strong/80 shadow-sm hover:shadow-md active:scale-[0.98]"
-      >
-        {/* LEFT: Info Section */}
-        <div className="space-y-2.5 flex-1">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[9px] px-2 py-0.5 bg-surface-strong/60 text-muted border border-surface">
-              ID: {data.id}
-            </span>
-            <span className={`font-mono text-[9px] px-2 py-0.5 border uppercase tracking-widest ${getStatusStyles(data.status)}`}>
-              {displayStatus}
-            </span>
-          </div>
-          
-          {/* 4. Responsive Title Hierarchy */}
-          <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground group-hover:text-[var(--accent)] transition-colors uppercase tracking-tight">
-            {data.title}
-          </h3>
-          
-          <p className="text-[13px] text-muted font-light max-w-xl line-clamp-2 leading-relaxed">
-            {data.description}
+      {/* Header Info Section */}
+      <div className="space-y-2 pr-20">
+        {/* 3. Refined ID Label */}
+        <p className="text-[9px] font-mono text-muted uppercase tracking-widest mb-1">
+          Case Study • {data.id}
+        </p>
+        
+        {/* 4. Responsive Title Hierarchy */}
+        <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground group-hover:text-[var(--projects-accent)] transition-colors uppercase tracking-tight leading-tight">
+          {data.title}
+        </h3>
+        
+        {/* 5. Premium Description */}
+        <p className="text-[12px] text-muted font-light max-w-xl line-clamp-2 leading-relaxed pt-1">
+          {data.description}
+        </p>
+      </div>
+
+      {/* 6. Divider Line */}
+      <div className="h-px bg-surface/60 w-full my-5"></div>
+
+      {/* Bottom Section: Risk & Action */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-5 w-full">
+        
+        {/* 7. Progress Bar Visualization */}
+        <div className="w-full sm:flex-1 max-w-md">
+          <p className="text-[9px] font-mono text-muted uppercase tracking-widest mb-2">
+            risk assessment
           </p>
-        </div>
 
-        {/* RIGHT: Visual Risk Score & Action */}
-        <div className="flex items-center justify-between sm:justify-end gap-4 w-full sm:w-auto pt-2 sm:pt-0">
-          
-          {/* 5 & 6. Progress Bar Visualization */}
-          <div className="w-full sm:w-44 lg:w-48">
-            <p className="text-[9px] text-muted font-mono tracking-widest mb-1.5 hidden sm:block">
-              RISK ASSESSMENT
-            </p>
+          <div className="flex flex-col gap-1.5">
+            <div className="w-full h-[3px] bg-background rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ease-out ${getRiskScoreColor(data.riskScore)}`}
+                style={{ width: `${riskPercent}%` }}
+              />
+            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="w-full h-1 bg-surface-strong rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ease-out ${getRiskScoreColor(data.riskScore).split(' ')[0]}`}
-                  style={{ width: `${riskPercent}%` }}
-                />
-              </div>
-
-              <span className={`text-[10px] font-mono whitespace-nowrap ${getRiskTextColor(data.riskScore)}`}>
-                {riskPercent}%
+            <div className="flex justify-between items-center w-full">
+              <span className="text-[9px] font-mono text-muted uppercase tracking-widest">
+                severity level
+              </span>
+              <span className={`text-[10px] font-mono font-bold ${getRiskTextColor(data.riskScore)}`}>
+                {riskPercent}% risk
               </span>
             </div>
           </div>
-          
-          {/* 7. Compact Action Button */}
-          <button className="w-10 h-10 min-h-[40px] border border-surface flex items-center justify-center group-hover:border-[var(--accent)] group-hover:bg-[var(--accent-soft)] transition-all rounded-sm active:scale-95">
-            <span className="text-muted group-hover:text-[var(--accent)] font-mono transition-colors">
-              →
-            </span>
-          </button>
         </div>
+        
+        {/* 8. Compact Action Button */}
+        <button className="w-full sm:w-auto px-6 py-2.5 border border-surface text-[9px] font-mono uppercase tracking-widest text-muted group-hover:border-[var(--projects-accent)] group-hover:bg-[var(--projects-accent-soft)] group-hover:text-[var(--projects-accent)] transition-all rounded-sm active:scale-95 shrink-0 mt-2 sm:mt-0">
+          view
+        </button>
       </div>
-    </>
+    </div>
   );
-}
+};
+
+export default React.memo(CaseCard);

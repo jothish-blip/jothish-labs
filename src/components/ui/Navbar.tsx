@@ -15,14 +15,14 @@ const sectionConfig: Record<string, { cssVar: string; label: string }> = {
 };
 
 export default function Navbar() {
-  // 4. Scroll Logic: Consolidated State for fewer re-renders
+  // Scroll Logic: Consolidated State for fewer re-renders
   const [navState, setNavState] = useState({
     active: "",
     scrolled: false,
     hidden: false,
     progress: 0,
   });
-  
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
@@ -32,7 +32,7 @@ export default function Navbar() {
   // Destructure for easier use in template
   const { active, scrolled, hidden, progress } = navState;
 
-  // 2. Mobile UX Issues: Multi-directional swipe logic
+  // Mobile UX Issues: Multi-directional swipe logic
   const touchStart = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -44,7 +44,7 @@ export default function Navbar() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!touchStart.current.x || !touchStart.current.y) return;
-    
+
     const diffX = e.touches[0].clientX - touchStart.current.x;
     const diffY = e.touches[0].clientY - touchStart.current.y;
 
@@ -59,7 +59,7 @@ export default function Navbar() {
   useEffect(() => {
     const savedActive = localStorage.getItem("lastSection");
     if (savedActive) {
-      setNavState(prev => ({ ...prev, active: savedActive }));
+      setNavState((prev) => ({ ...prev, active: savedActive }));
     }
 
     const savedTheme = localStorage.getItem("theme");
@@ -80,14 +80,16 @@ export default function Navbar() {
   }, [theme]);
 
   const toggleTheme = () => {
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
     setTheme((current) => (current === "dark" ? "light" : "dark"));
   };
 
   // Lock background scroll when mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "auto";
-    return () => { document.body.style.overflow = "auto"; };
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [menuOpen]);
 
   useEffect(() => {
@@ -96,29 +98,30 @@ export default function Navbar() {
 
       scrollTimeout.current = window.requestAnimationFrame(() => {
         const currentScroll = window.scrollY;
-        
+
         // Progress Calc
         const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        const newProgress = (currentScroll / height) * 100;
+        const newProgress = height > 0 ? (currentScroll / height) * 100 : 0;
 
         // Hide/Show Logic
         let newScrolled = false;
         let newHidden = false;
-        
+
         if (currentScroll > 100) {
           newScrolled = true;
-          newHidden = currentScroll > lastScrollY.current && currentScroll > 300;
+          // IMPORTANT FIX: 400px threshold buffer to prevent scroll flicker
+          newHidden = currentScroll > lastScrollY.current && currentScroll > 400;
         } else {
           localStorage.removeItem("lastSection");
         }
-        
+
         lastScrollY.current = currentScroll;
 
         // Section Detection
         const offset = window.innerHeight * 0.25;
         const scrollPos = currentScroll + offset;
         let newActive = "";
-        
+
         for (const section of sections) {
           const el = document.getElementById(section);
           if (el && scrollPos >= el.offsetTop && scrollPos < el.offsetTop + el.offsetHeight) {
@@ -129,11 +132,11 @@ export default function Navbar() {
         if (currentScroll < 100) newActive = "";
 
         // Single State Update
-        setNavState(prev => {
+        setNavState((prev) => {
           if (
-            prev.progress !== newProgress || 
-            prev.scrolled !== newScrolled || 
-            prev.hidden !== newHidden || 
+            prev.progress !== newProgress ||
+            prev.scrolled !== newScrolled ||
+            prev.hidden !== newHidden ||
             prev.active !== newActive
           ) {
             if (newActive && prev.active !== newActive) {
@@ -143,7 +146,7 @@ export default function Navbar() {
               progress: newProgress,
               scrolled: newScrolled,
               hidden: newHidden,
-              active: newActive
+              active: newActive,
             };
           }
           return prev;
@@ -180,8 +183,8 @@ export default function Navbar() {
 
   const smoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); // 7. Micro UX Upgrades
-    
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10); // Micro UX Upgrades
+
     const el = document.getElementById(id);
     if (el) {
       document.body.style.cursor = "wait";
@@ -190,7 +193,7 @@ export default function Navbar() {
 
       window.scrollTo({ top: y, behavior: "smooth" });
       setMenuOpen(false);
-      
+
       setTimeout(() => {
         document.body.style.cursor = "default";
       }, 300);
@@ -201,7 +204,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* 6. Dark / Light Mode Dual Tokens Inline Definition (Can be moved to globals.css) */}
+      {/* Dark / Light Mode Dual Tokens Inline Definition */}
       <style jsx global>{`
         :root {
           --accent-about: #52525b;
@@ -210,7 +213,7 @@ export default function Navbar() {
           --accent-terminal: #d97706;
           --accent-contact: #2563eb;
           scroll-behavior: smooth;
-          scroll-padding-top: 100px; /* 7. Scroll snap feel */
+          scroll-padding-top: 100px;
         }
         html.dark {
           --accent-about: #a1a1aa;
@@ -222,46 +225,57 @@ export default function Navbar() {
       `}</style>
 
       <nav
-        className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ease-out transform ${hidden ? '-translate-y-full' : 'translate-y-0'}
+        className={`fixed top-0 left-0 w-full z-[100] transition-all duration-500 ease-out transform ${
+          hidden ? "-translate-y-full" : "translate-y-0"
+        }
         before:absolute before:inset-0 before:-z-10 before:transition-all before:duration-700 before:ease-out
-        ${scrolled 
-          ? "py-3 bg-surface-strong backdrop-blur-2xl border-b border-surface shadow-md dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] before:opacity-[0.08] dark:before:opacity-[0.12]" 
-          : "py-6 bg-transparent before:opacity-0"}`}
+        ${
+          scrolled
+            ? "py-3 bg-surface-strong backdrop-blur-2xl border-b border-surface shadow-md dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] before:opacity-[0.08] dark:before:opacity-[0.12]"
+            : "py-6 bg-transparent before:opacity-0"
+        }`}
         style={{
-          '--nav-gradient': active ? `linear-gradient(to right, transparent, ${activeColorVar}, transparent)` : 'transparent',
-          ...({ '&::before': { background: 'var(--nav-gradient)' } } as any)
+          "--nav-gradient": active
+            ? `linear-gradient(to right, transparent, ${activeColorVar}, transparent)`
+            : "transparent",
+          ...({ "&::before": { background: "var(--nav-gradient)" } } as any),
         }}
       >
-        {/* PREMIUM GLOBAL PROGRESS TRACKER - Glow tuned down */}
-        <div 
+        {/* PREMIUM GLOBAL PROGRESS TRACKER */}
+        <div
           className="absolute top-0 left-0 h-[2px] opacity-80 shadow-[0_0_6px_currentColor] transition-all duration-300 ease-out z-[102]"
-          style={{ width: `${progress}%`, backgroundColor: activeColorVar, color: activeColorVar }} 
+          style={{ width: `${progress}%`, backgroundColor: activeColorVar, color: activeColorVar }}
         />
 
-        <div className={`absolute top-1.5 right-6 text-[9px] text-muted font-mono tracking-widest hidden md:block transition-opacity duration-500 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
+        <div
+          className={`absolute top-1.5 right-6 text-[9px] text-muted font-mono tracking-widest hidden md:block transition-opacity duration-500 ${
+            scrolled ? "opacity-100" : "opacity-0"
+          }`}
+        >
           {Math.round(progress)}%
         </div>
 
         <div className="max-w-[1500px] mx-auto px-6 md:px-12 flex justify-between items-center relative">
-          
           <a
             href="#"
             onClick={(e) => smoothScroll(e, "hero")}
             className="group flex flex-col font-mono relative z-[101] transition-transform duration-300 hover:scale-[1.03] active:scale-95 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 rounded-sm p-1"
           >
             <div className="flex items-center gap-2">
-               {/* 3. Reduced pulse noise on the logo */}
-               <div className="w-1.5 h-1.5 rounded-full transition-colors duration-500 shadow-[0_0_6px_currentColor]" style={{ backgroundColor: activeColorVar, color: activeColorVar }}></div>
-               <span className="text-[12px] font-black tracking-[0.2em] text-foreground uppercase group-hover:tracking-[0.25em] transition-all duration-300 ease-out">
-                 JOTHISH GANDHAM
-               </span>
+              <div
+                className="w-1.5 h-1.5 rounded-full transition-colors duration-500 shadow-[0_0_6px_currentColor]"
+                style={{ backgroundColor: activeColorVar, color: activeColorVar }}
+              ></div>
+              <span className="text-[12px] font-black tracking-[0.2em] text-foreground uppercase group-hover:tracking-[0.25em] transition-all duration-300 ease-out">
+                JOTHISH GANDHAM
+              </span>
             </div>
             <span className="text-[9px] text-muted tracking-widest font-light ml-3.5 uppercase transition-colors duration-300">
-               Status: <span style={{ color: "var(--accent-skills)" }}>Active</span>
+              Status: <span style={{ color: "var(--accent-skills)" }}>Active</span>
             </span>
           </a>
 
-          <div 
+          <div
             className="absolute top-full mt-4 left-1/2 -translate-x-1/2 text-[10px] font-mono tracking-widest uppercase opacity-0 md:opacity-100 transition-colors duration-500 ease-out pointer-events-none"
             style={{ color: active ? sectionConfig[active].cssVar : "var(--muted)" }}
           >
@@ -278,35 +292,38 @@ export default function Navbar() {
                   key={sec}
                   href={`#${sec}`}
                   onClick={(e) => smoothScroll(e, sec)}
-                  // 2. Mobile/Desktop tap target size increased implicitly with min-h
                   className={`group relative min-h-[44px] flex items-center px-6 py-2 font-mono text-[11px] tracking-widest uppercase transition-all duration-500 ease-out active:scale-95 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 rounded-full ${
                     isActive ? "scale-105 font-bold" : "text-muted hover:text-foreground"
                   }`}
                   style={{ color: isActive ? cssVar : undefined }}
                 >
-                  {/* Underline logic: shows on hover, persists on active */}
-                  <div 
-                    className={`absolute bottom-2 left-1/2 -translate-x-1/2 h-[1.5px] transition-all duration-300 ease-out opacity-80 ${isActive ? 'w-1/2' : 'w-0 group-hover:w-1/2'}`}
-                    style={{ backgroundColor: isActive ? cssVar : 'currentColor' }}
+                  <div
+                    className={`absolute bottom-2 left-1/2 -translate-x-1/2 h-[1.5px] transition-all duration-300 ease-out opacity-80 ${
+                      isActive ? "w-1/2" : "w-0 group-hover:w-1/2"
+                    }`}
+                    style={{ backgroundColor: isActive ? cssVar : "currentColor" }}
                   ></div>
 
                   <div className="relative z-10 flex flex-col items-center">
-                    <span className={`text-[7px] mb-0.5 transition-colors duration-500 ease-out ${isActive ? "" : "text-muted group-hover:text-foreground"}`}>
+                    <span
+                      className={`text-[7px] mb-0.5 transition-colors duration-500 ease-out ${
+                        isActive ? "" : "text-muted group-hover:text-foreground"
+                      }`}
+                    >
                       0{idx + 1}
                     </span>
-                    <span className="transition-transform duration-500 ease-out">
-                      {sec}
-                    </span>
+                    <span className="transition-transform duration-500 ease-out">{sec}</span>
                   </div>
-                  
-                  {/* 3. Tooltip delay lowered to 75ms */}
+
                   <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-75 ease-out pointer-events-none whitespace-nowrap bg-surface-strong text-[9px] px-2 py-1 rounded-sm border border-surface text-muted">
                     {sectionConfig[sec].label}
                   </div>
 
-                  {/* 3. Removed heavy pulse animation, kept simple active glow */}
                   {isActive && (
-                    <div className="absolute inset-0 opacity-15 blur-md rounded-full transition-opacity duration-500" style={{ backgroundColor: cssVar }}></div>
+                    <div
+                      className="absolute inset-0 opacity-15 blur-md rounded-full transition-opacity duration-500"
+                      style={{ backgroundColor: cssVar }}
+                    ></div>
                   )}
                 </a>
               );
@@ -332,43 +349,73 @@ export default function Navbar() {
           </button>
 
           <button
-            className={`md:hidden flex flex-col gap-1.5 p-3 group bg-surface rounded-sm border border-surface relative z-[101] transition-opacity duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 ${menuOpen ? "opacity-0 pointer-events-none" : "opacity-100 active:scale-95"}`}
+            className={`md:hidden flex items-center justify-center p-2.5 group bg-surface rounded-sm border border-surface relative z-[101] transition-opacity duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 ${
+              menuOpen ? "opacity-0 pointer-events-none" : "opacity-100 active:scale-95"
+            }`}
             onClick={() => {
-              if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10);
+              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
               setMenuOpen(true);
             }}
             aria-label="Open Menu"
           >
-            <div className="h-[1px] w-5 bg-foreground transition-all"></div>
-            <div className="h-[1px] w-3 bg-foreground ml-auto transition-all"></div>
-            <div className="h-[1px] w-5 bg-foreground transition-all"></div>
+            <svg 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="w-6 h-6 text-slate-800 dark:text-slate-200"
+            >
+              <line x1="4" y1="6" x2="20" y2="6"></line>
+              <line x1="4" y1="12" x2="20" y2="12"></line>
+              <line x1="4" y1="18" x2="20" y2="18"></line>
+            </svg>
           </button>
         </div>
 
-        {/* 2. Mobile Overlay refactored for performance and smooth UX */}
-        <div 
-          className={`fixed inset-0 w-full h-[100vh] bg-surface/95 backdrop-blur-md border-b border-surface transition-all duration-500 ease-out md:hidden z-[110] ${
+        {/* --- FIXED OVERLAY SECTION --- */}
+        <div
+          className={`fixed inset-0 w-full h-[100dvh] bg-white dark:bg-zinc-950 transition-all duration-500 ease-out md:hidden z-[110] ${
             menuOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-full opacity-0 pointer-events-none"
           }`}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
         >
-          <button 
+          {/* FIX 2: Moved close button up to top-4 right-4 and slightly adjusted padding for tighter look */}
+          <button
             onClick={() => setMenuOpen(false)}
-            className="absolute top-6 right-6 p-4 bg-surface border border-surface rounded-sm text-muted hover:text-foreground hover:bg-surface-strong transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-cyan-500/30"
+            className="absolute top-4 right-4 p-2.5 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-md text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 z-[115]"
             aria-label="Close Menu"
           >
-            <div className="w-5 h-[1px] bg-current rotate-45 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
-            <div className="w-5 h-[1px] bg-current -rotate-45 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+            <svg 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              className="w-6 h-6"
+            >
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
 
-          <div className="flex flex-col p-8 pt-24 h-full overflow-y-auto">
-            <div className="mb-10 border-b border-surface pb-6 flex justify-between items-end">
+          {/* FIX 3: Adjusted pt-24 to pt-20 to pull the inner content up since the close button moved higher */}
+          <div className="flex flex-col p-6 pt-20 h-full overflow-y-auto">
+            <div className="mb-8 border-b border-slate-200 dark:border-zinc-800 pb-6 flex justify-between items-end">
               <div>
-                <p className="font-mono text-[10px] tracking-[0.5em] uppercase mb-2" style={{ color: "var(--accent-projects)" }}>// Navigation</p>
-                <h3 className="text-xs font-mono text-muted uppercase tracking-widest">Menu</h3>
+                <p className="font-mono text-[10px] tracking-[0.5em] uppercase mb-2" style={{ color: "var(--accent-projects)" }}>
+                  // Navigation
+                </p>
+                <h3 className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">Menu</h3>
               </div>
-              <div className="text-[9px] text-muted font-mono tracking-widest text-right">Swipe down or<br/>right to close</div>
+              <div className="text-[9px] text-slate-500 dark:text-slate-400 font-mono tracking-widest text-right">
+                Swipe down or
+                <br />
+                right to close
+              </div>
             </div>
 
             <div className="flex flex-col gap-8 sm:gap-10">
@@ -381,12 +428,12 @@ export default function Navbar() {
                     key={sec}
                     href={`#${sec}`}
                     onClick={(e) => smoothScroll(e, sec)}
-                    className={`group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 p-2 rounded-sm ${isActive ? "" : "text-muted"}`}
+                    className={`group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 p-2 rounded-sm ${
+                      isActive ? "text-slate-900 dark:text-slate-50" : "text-slate-500 dark:text-slate-400"
+                    }`}
                     style={{ color: isActive ? cssVar : undefined }}
                   >
-                    <span className="font-mono text-xs transition-colors duration-500 ease-out">
-                        0{idx + 1}
-                    </span>
+                    <span className="font-mono text-xs transition-colors duration-500 ease-out">0{idx + 1}</span>
                     <span className="text-3xl sm:text-4xl font-black tracking-tighter uppercase transition-all duration-500 ease-out hover:opacity-80">
                       {sec}
                     </span>
@@ -394,17 +441,101 @@ export default function Navbar() {
                 );
               })}
             </div>
-            
-            <div className="mt-auto pt-10 border-t border-surface font-mono text-[9px] text-muted flex justify-between items-center uppercase tracking-widest">
+
+            <div className="mt-auto pt-10 border-t border-slate-200 dark:border-zinc-800 font-mono text-[9px] text-slate-500 dark:text-slate-400 flex justify-between items-center uppercase tracking-widest">
               <span className="flex items-center gap-2">
-                 <div className="w-1.5 h-1.5 rounded-full shadow-[0_0_6px_currentColor]" style={{ backgroundColor: "var(--accent-skills)", color: "var(--accent-skills)" }}></div>
-                 System_Online
+                <div
+                  className="w-1.5 h-1.5 rounded-full shadow-[0_0_6px_currentColor]"
+                  style={{ backgroundColor: "var(--accent-skills)", color: "var(--accent-skills)" }}
+                ></div>
+                System_Online
               </span>
               <span>JOTHISH GANDHAM</span>
             </div>
           </div>
         </div>
       </nav>
+
+      {/* NEW SIDEBAR NAVIGATION: Progress Line + Nodes + Hover Expansion */}
+      {/* Hidden on Mobile (md:flex ensures desktop only) */}
+      <aside
+        className={`fixed left-4 top-1/2 -translate-y-1/2 z-[105] hidden md:flex flex-col items-start transition-all duration-500 group/sidebar ${
+          hidden ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6 pointer-events-none"
+        }`}
+      >
+        {/* Scroll Percentage Element */}
+        <div
+          className="text-[9px] font-mono tracking-widest text-muted mb-4 ml-[2px] transition-colors duration-300"
+          style={{ color: activeColorVar }}
+        >
+          {Math.round(progress)}%
+        </div>
+
+        <div className="relative flex flex-col gap-6 py-2 ml-1">
+          {/* Faded Background Track */}
+          <div className="absolute left-[5px] top-0 bottom-0 w-[2px] bg-surface-strong/50 z-0"></div>
+
+          {/* Active Vertical Progress Line */}
+          <div
+            className="absolute left-[5px] top-0 w-[2px] transition-all duration-300 z-0 shadow-[0_0_8px_currentColor]"
+            style={{
+              height: `${progress}%`,
+              backgroundColor: activeColorVar,
+              color: activeColorVar,
+            }}
+          ></div>
+
+          {/* Interactive Section Nodes */}
+          {sections.map((sec, idx) => {
+            const isActive = active === sec;
+            const cssVar = sectionConfig[sec].cssVar;
+
+            return (
+              <a
+                key={sec}
+                href={`#${sec}`}
+                onClick={(e) => smoothScroll(e, sec)}
+                className="group/node flex items-center relative z-10 focus:outline-none"
+                aria-label={`Scroll to ${sec}`}
+              >
+                {/* Node Target */}
+                <div
+                  className={`w-3 h-3 rounded-full border-[1.5px] border-surface transition-all duration-300 ${
+                    isActive ? "scale-125" : "opacity-40 group-hover/node:opacity-100"
+                  }`}
+                  style={{
+                    backgroundColor: cssVar,
+                    boxShadow: isActive ? `0 0 8px ${cssVar}` : "none",
+                  }}
+                />
+
+                {/* Expanding Label Container (Mini to Full) */}
+                <div className="flex items-center ml-4 cursor-pointer">
+                  {/* Always-visible Mini Label */}
+                  <span
+                    className={`text-[9px] font-mono transition-colors duration-300 ${
+                      isActive ? "font-bold" : "text-muted"
+                    }`}
+                    style={{ color: isActive ? cssVar : undefined }}
+                  >
+                    0{idx + 1}
+                  </span>
+
+                  {/* Full Text Expanding on Hover */}
+                  <div className="overflow-hidden transition-all duration-300 ease-out max-w-0 opacity-0 group-hover/sidebar:max-w-[100px] group-hover/sidebar:opacity-100">
+                    <span
+                      className="pl-2 text-[10px] font-mono uppercase tracking-widest whitespace-nowrap"
+                      style={{ color: isActive ? cssVar : "var(--muted)" }}
+                    >
+                      {sec}
+                    </span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      </aside>
     </>
   );
 }
