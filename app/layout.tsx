@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ThemeInit from "@/components/ThemeInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "Security-focused portfolio of Jothish Gandham showcasing systems, skills, and projects.",
   icons: {
-      icon: "/favicon-v2.ico",
+    icon: "/favicon-v2.ico",
   },
 };
 
@@ -43,29 +44,16 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <body className="min-h-screen flex flex-col bg-background text-foreground transition-colors">
+      <body className="min-h-screen flex flex-col bg-background text-foreground transition-colors antialiased">
+        
+        {/* Theme initialization (client-side) */}
+        <ThemeInit />
 
-        {/* THEME INIT (no flicker) */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function () {
-                try {
-                  var stored = localStorage.getItem('theme');
-                  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-                  if (stored === 'dark' || (!stored && prefersDark)) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-
+        {/* Main App */}
         <div className="flex-1 flex flex-col pb-safe">
           {children}
         </div>
+
       </body>
     </html>
   );

@@ -108,3 +108,16 @@ pre::selection {
 }
 @keyframes slowPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; backdrop-filter: blur(0px); } to { opacity: 1; backdrop-filter: blur(4px); } }
+
+/* 🔥 PDF SAFE MODE (fix html2canvas crash) */
+.pdf-mode {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+.pdf-mode * {
+  background-color: transparent !important;
+  color: #000000 !important;
+  box-shadow: none !important;
+  border-color: #cccccc !important;
+}
