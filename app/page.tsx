@@ -5,7 +5,7 @@ import Skills from "@/components/sections/Skills";
 import Terminal from "@/components/sections/Terminal";
 import Contact from "@/components/sections/Contact";
 import Navbar from "@/components/ui/Navbar";
-
+import Resume from "./Resume/page";
 export default function Home() {
   return (
     /* 1 & 5. Theme-aware colors and selection highlighting */

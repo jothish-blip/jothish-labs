@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // ✅ Modal State added
+  const [showResumeOptions, setShowResumeOptions] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -166,14 +169,16 @@ export default function Hero() {
                 Explore Projects
               </a>
 
-              <a 
-                href="/resume.pdf" 
-                target="_blank"
-                onClick={handleInteraction}
+              {/* ✅ Converted to a trigger button */}
+              <button
+                onClick={() => {
+                  handleInteraction();
+                  setShowResumeOptions(true);
+                }}
                 className="px-8 py-4 border border-surface text-muted hover:text-foreground hover:bg-surface-strong font-mono text-[10px] uppercase tracking-[0.3em] transition-all active:scale-95 rounded-sm bg-surface"
               >
                 View Resume
-              </a>
+              </button>
             </div>
 
             <p className="text-[10px] text-muted ml-8 font-mono mt-10 tracking-widest uppercase">
@@ -228,6 +233,43 @@ export default function Hero() {
           </div>
         </div>
       </div>
+
+      {/* ✅ MODAL UI ADDED HERE */}
+      {showResumeOptions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-background border border-surface rounded-sm p-6 w-[300px] space-y-4">
+            
+            <h3 className="text-sm font-mono uppercase tracking-widest text-muted text-center pb-2">
+              Resume Options
+            </h3>
+
+            <a
+              href="/Resume"
+              className="block w-full text-center px-4 py-3 border border-surface hover:bg-surface text-foreground text-xs font-mono uppercase tracking-widest transition-colors"
+              onClick={() => setShowResumeOptions(false)}
+            >
+              View Resume (Web)
+            </a>
+
+            <a
+              href="/Resume.pdf"
+              download
+              className="block w-full text-center px-4 py-3 border border-surface hover:bg-surface text-foreground text-xs font-mono uppercase tracking-widest transition-colors"
+              onClick={() => setShowResumeOptions(false)}
+            >
+              Download Resume (PDF)
+            </a>
+
+            <button
+              onClick={() => setShowResumeOptions(false)}
+              className="text-[10px] font-mono tracking-widest text-muted hover:text-foreground uppercase w-full mt-2 transition-colors"
+            >
+              Cancel
+            </button>
+
+          </div>
+        </div>
+      )}
     </>
   );
 }

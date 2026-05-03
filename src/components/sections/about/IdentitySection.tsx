@@ -1,4 +1,23 @@
+import { useState, useEffect, useRef } from "react";
+
 export default function IdentitySection() {
+  const [showResumeOptions, setShowResumeOptions] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowResumeOptions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 items-start">
       {/* LEFT: TEXT DATA */}
@@ -42,9 +61,37 @@ export default function IdentitySection() {
           <div className="flex flex-wrap items-center gap-6 pt-6">
             <a href="https://github.com/jothish-blip" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-muted hover:text-[var(--accent)] transition-colors uppercase tracking-widest">[ github ]</a>
             <a href="https://www.linkedin.com/in/jothish-gandham-5b90b334a/" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-muted hover:text-[var(--accent)] transition-colors uppercase tracking-widest">[ linkedin ]</a>
-            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="font-mono text-[10px] text-[var(--accent)] border border-[var(--accent-soft)] bg-[var(--accent-soft)] px-3 py-1 hover:bg-surface transition-all uppercase tracking-widest">
-              [ access_resume ]
-            </a>
+            
+            {/* FLOATING DROPDOWN MENU */}
+            <div ref={dropdownRef} className="relative">
+              <button
+                onClick={() => setShowResumeOptions((prev) => !prev)}
+                className="font-mono text-[10px] text-[var(--accent)] border border-[var(--accent-soft)] bg-[var(--accent-soft)] px-3 py-1 hover:bg-surface transition-all uppercase tracking-widest"
+              >
+                [ access_resume ]
+              </button>
+
+              {showResumeOptions && (
+                <div className="absolute top-full mt-2 left-0 w-[220px] border border-surface bg-background backdrop-blur-md shadow-lg z-50">
+                  <a
+                    href="/Resume"
+                    className="block px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-muted hover:text-foreground hover:bg-surface transition"
+                    onClick={() => setShowResumeOptions(false)}
+                  >
+                    View Resume (Web)
+                  </a>
+                  <a
+                    href="/Resume.pdf"
+                    download
+                    className="block px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-muted hover:text-foreground hover:bg-surface transition border-t border-surface"
+                    onClick={() => setShowResumeOptions(false)}
+                  >
+                    Download Resume (PDF)
+                  </a>
+                </div>
+              )}
+            </div>
+            
           </div>
         </div>
       </div>
