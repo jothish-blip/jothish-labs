@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 
 export default function IdentitySection() {
   const [showResumeOptions, setShowResumeOptions] = useState(false);
@@ -103,14 +104,14 @@ export default function IdentitySection() {
             <div className="relative border border-surface p-2 bg-surface-strong backdrop-blur-sm overflow-hidden rounded-sm">
                 <div className="absolute top-0 left-0 w-full h-[1px] bg-[var(--accent)] opacity-30 animate-scan z-10 pointer-events-none"></div>
                 <img 
-                    src="https://i.pinimg.com/1200x/27/74/3e/27743e3a002888b26448f35e0fe41137.jpg" 
+                    src= "/images/profile.jpeg"
                     alt="Jothish Gandham"
                     className="w-full h-auto object-cover md:grayscale md:brightness-75 md:group-hover:grayscale-0 md:group-hover:brightness-100 transition-all duration-700 ease-in-out border border-surface"
                 />
             </div>
             <div className="mt-3 flex justify-between items-center px-1 font-mono text-[8px] text-muted uppercase tracking-[0.2em]">
                 <span>Profile Image</span>
-                <span className="text-muted">v1.0</span>
+                <span className="text-muted">Jothish Gandham</span>
             </div>
         </div>
       </div>
