@@ -13,6 +13,11 @@
   --accent-soft: rgba(8, 145, 178, 0.1);
   --accent-grid: rgba(0, 0, 0, 0.04);
 
+/* Enterprise Security Palette */
+--danger: #b91c1c;
+--warning: #b45309;
+--success: #047857;
+
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --duration: 0.3s;
@@ -34,6 +39,11 @@ html.dark {
   --accent: #22d3ee;
   --accent-soft: rgba(34, 211, 238, 0.1);
   --accent-grid: rgba(255, 255, 255, 0.012);
+
+  /* Semantic Colors */
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --success: #34d399;
 }
 
 /* ===== BASE ===== */
