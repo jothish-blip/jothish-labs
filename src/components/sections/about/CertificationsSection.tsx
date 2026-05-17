@@ -24,7 +24,7 @@ export default function CertificationsSection() {
             <span className="text-green-400 font-bold">{verifiedCerts.length}</span> / {certifications.length} Core Courses Completed
           </p>
           <p className="text-[9px] text-muted font-mono mt-1">
-            Last updated: May 2026
+            Last updated: May 18, 2026
           </p>
         </div>
 

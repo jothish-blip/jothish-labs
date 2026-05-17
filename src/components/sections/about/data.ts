@@ -47,20 +47,20 @@ export const certifications: Certificate[] = [
     link: "https://www.coursera.org/account/accomplishments/verify/563X88VIAKFC",
     status: "verified",
     path: "/Certificates/GC4.pdf",
-    skills: "Linux File Systems • Bash • SQL Queries",
-    isLatest: true
+    skills: "Linux File Systems • Bash • SQL Queries"
   },
   {
     id: "G05",
     courseNumber: 5,
     title: "Assets, Threats, and Vulnerabilities",
     issuer: "Google",
-    date: "In Progress • Est. May 18, 2026",
-    credentialId: "—",
-    link: "#",
-    status: "in progress",
-    path: "",
-    skills: "Assets • Vulnerability Management • Threat Modeling"
+    date: "May 18, 2026",
+    credentialId: "XNWU15BNKKC3",
+    link: "https://www.coursera.org/account/accomplishments/verify/XNWU15BNKKC3",
+    status: "verified",
+    path: "/Certificates/GC5.pdf",
+    skills: "Assets • Vulnerability Management • Threat Modeling",
+    isLatest: true
   },
   {
     id: "G06",
