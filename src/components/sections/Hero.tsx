@@ -1,12 +1,26 @@
 ﻿"use client";
 import { useEffect, useRef, useState } from "react";
+import { Mail, Phone } from "lucide-react";
+
+// ✅ Custom SVGs to bypass lucide-react brand export errors
+const GithubIcon = ({ className }: { className?: string }) => (
+  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.2c3-.3 6-1.5 6-6.5a5.4 5.4 0 0 0-1.5-3.8 5.3 5.3 0 0 0-.1-3.8s-1.2-.4-3.9 1.4a13.3 13.3 0 0 0-7 0C6.2 1.6 5 2 5 2a5.3 5.3 0 0 0-.1 3.8A5.4 5.4 0 0 0 3.5 9.5c0 5 3 6.2 6 6.5a4.8 4.8 0 0 0-1 3.2v4"></path>
+    <path d="M9 18c-4.5 1.6-5-2.5-7-3"></path>
+  </svg>
+);
+
+const LinkedinIcon = ({ className }: { className?: string }) => (
+  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+    <rect width="4" height="12" x="2" y="9"></rect>
+    <circle cx="4" cy="4" r="2"></circle>
+  </svg>
+);
 
 export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
-  
-  // ✅ Modal State added
-  const [showResumeOptions, setShowResumeOptions] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -15,6 +29,7 @@ export default function Hero() {
 
     let currentX = 0;
     let currentY = 0;
+    let animationFrameId: number;
 
     const move = (e: MouseEvent) => {
       currentX = e.clientX;
@@ -31,13 +46,17 @@ export default function Hero() {
       container.style.setProperty("--x", `${nextX}px`);
       container.style.setProperty("--y", `${nextY}px`);
 
-      requestAnimationFrame(animate);
+      animationFrameId = requestAnimationFrame(animate);
     };
 
     window.addEventListener("mousemove", move);
     animate();
 
-    return () => window.removeEventListener("mousemove", move);
+    // ✅ Performance: Cleanup event listener and animation frame
+    return () => {
+      window.removeEventListener("mousemove", move);
+      cancelAnimationFrame(animationFrameId);
+    };
   }, []);
 
   // Micro UX: Native app feel
@@ -54,12 +73,12 @@ export default function Hero() {
       */}
       <style jsx global>{`
         :root {
-          --hero-accent: #0891b2; /* Deeper for light mode */
+          --hero-accent: #0891b2;
           --hero-accent-glow: rgba(8, 145, 178, 0.03);
           --hero-accent-grid: rgba(8, 145, 178, 0.08);
         }
         html.dark {
-          --hero-accent: #22d3ee; /* Vibrant for dark mode */
+          --hero-accent: #22d3ee;
           --hero-accent-glow: rgba(34, 211, 238, 0.03);
           --hero-accent-grid: rgba(34, 211, 238, 0.05);
         }
@@ -78,7 +97,7 @@ export default function Hero() {
           }}
         />
 
-        {/* 🖱️ REACTIVE GLOW (Calmer & More Premium) */}
+        {/* 🖱️ REACTIVE GLOW */}
         <div
           className="pointer-events-none absolute inset-0 z-[2]"
           style={{
@@ -86,68 +105,70 @@ export default function Hero() {
           }}
         />
 
-        {/* 📺 SCANLINE (Minimal) */}
+        {/* 📺 SCANLINE */}
         <div className="absolute inset-0 z-[3] pointer-events-none opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_2px]" />
 
         {/* MAIN CONTENT */}
-        <div className="relative z-10 px-6 md:px-16 lg:px-32 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full max-w-7xl">
+        <div className="relative z-10 px-6 md:px-16 lg:px-32 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full max-w-7xl mb-24 md:mb-0">
           
-          {/* Left Column: Mission Statement */}
+          {/* Left Column */}
           <div className={`lg:col-span-8 transition-all duration-1000 delay-300 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
             
             <p className="text-[10px] font-mono text-muted mb-4 tracking-widest uppercase">
-              JOTHISH GANDHAM / SECURITY LEARNER
+              JOTHISH GANDHAM / ASPIRING SOC ANALYST
             </p>
             
-            {/* ⚡ NEUTRAL STATUS STRIP (Cleaned up visual noise) */}
-            <div className="flex flex-wrap gap-3 mb-8 font-mono text-[9px] tracking-widest uppercase">
+            {/* ⚡ AVAILABILITY STRIP */}
+            <div className="flex flex-wrap gap-3 mb-8 font-mono text-[9px] tracking-widest uppercase transition-all">
               <span className="flex items-center gap-1.5 text-foreground border border-surface px-2 py-1 rounded-sm bg-surface shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--hero-accent)' }}></span>
-                OPEN_FOR_INTERNSHIPS
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                AVAILABLE FOR SOC INTERNSHIP
               </span>
-              <span className="text-muted border border-surface px-2 py-1 rounded-sm">FOCUSED_ON_BLUE_TEAM</span>
-              <span className="text-muted border border-surface px-2 py-1 rounded-sm">LEARNING_PROJECTS</span>
+              <span className="text-muted border border-surface px-2 py-1 rounded-sm hover:text-foreground transition-colors cursor-default">CONTINUOUS LEARNER</span>
             </div>
 
-            <h1 className="text-5xl md:text-[90px] font-black tracking-tighter leading-[0.85] mb-10">
-              Understanding <span className="text-muted italic">Systems</span>.<br />
-              By <span className="underline decoration-1 underline-offset-[12px]" style={{ color: 'var(--hero-accent)' }}>Breaking</span> Them.
-            </h1>
+            <h1 className="text-5xl md:text-[80px] font-black tracking-tighter leading-[0.85] mb-10">
+  Building <span className="italic" style={{ color: 'var(--hero-accent)' }}>Secure</span>.<br />
+  Learning <span className="underline decoration-1 underline-offset-[12px]" style={{ color: 'var(--hero-accent)' }}>Every Day</span>.
+</h1>
 
-            <div className="max-w-xl space-y-6">
+            <div className="max-w-2xl space-y-6">
               <div className="border-l-2 border-surface pl-8 space-y-4">
+                {/* 🔥 PROOF-BASED INTRO */}
                 <p className="text-muted text-lg md:text-xl font-light leading-relaxed">
-                  Jothish Gandham — <span className="text-foreground font-medium">Security Analyst</span> specialized in vulnerability identification and threat analysis through <span className="text-muted italic">real-world simulations</span>.
-                </p>
-                <p className="text-muted text-sm font-light">
-                  I don’t know everything yet — but I focus on understanding how systems actually behave when things go wrong.
+                  I build defensive cybersecurity skills through <span className="text-foreground font-medium">home labs, SOC simulations, SIEM investigations</span>, and hands-on projects that mirror real-world analyst workflows.
                 </p>
               </div>
               
               <div className="h-px w-16 bg-surface ml-8 my-8"></div>
               
-              {/* PROOF SIGNALS */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pl-8 font-mono">
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted uppercase tracking-widest">Focus</p>
-                  <p className="text-[12px] sm:text-[13px] text-foreground font-bold leading-tight">Network & System</p>
+              {/* 🔥 QUANTIFIABLE PROOF SIGNALS */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pl-8 font-mono">
+                <div className="space-y-1 group">
+                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">Projects</p>
+                  <p className="text-lg sm:text-xl text-foreground font-bold leading-tight">12+</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted uppercase tracking-widest">Core Tools</p>
-                  <p className="text-[12px] sm:text-[13px] text-foreground font-bold leading-tight">Wireshark, SQL, Linux</p>
+                <div className="space-y-1 group">
+                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">Labs</p>
+                  <p className="text-lg sm:text-xl text-foreground font-bold leading-tight">20+</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] text-muted uppercase tracking-widest">Track</p>
-                  <p className="text-[12px] sm:text-[13px] font-bold italic leading-tight" style={{ color: 'var(--hero-accent)' }}>Learning Phase</p>
+                <div className="space-y-1 group">
+                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">CTFs</p>
+                  <p className="text-lg sm:text-xl text-foreground font-bold leading-tight">-</p>
+                </div>
+                <div className="space-y-1 group">
+                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">Learning</p>
+                  <p className="text-sm sm:text-base font-bold italic leading-tight mt-1" style={{ color: 'var(--hero-accent)' }}>Daily</p>
                 </div>
               </div>
 
               {/* Tags */}
-              <div className="flex flex-wrap gap-2 pl-8 pt-2">
-                {['Packet Analysis', 'Log Reading', 'Threat Detection', 'Observation'].map((tag) => (
+              <div className="flex flex-wrap gap-2 pl-8 pt-4">
+                {['Network Security', 'Threat Detection', 'Incident Response', 'SIEM', 'Blue Team', 'Linux' , 'SQL' , 'Python' ].map((tag, i) => (
                   <span 
                     key={tag} 
-                    className="group text-[8px] font-mono border border-surface px-2 py-1 rounded-sm text-muted uppercase tracking-widest transition-all cursor-default bg-surface hover:text-foreground hover:border-surface-strong"
+                    className="group text-[8px] font-mono border border-surface px-2 py-1 rounded-sm text-muted uppercase tracking-widest transition-all cursor-default bg-surface hover:text-foreground hover:border-surface-strong hover:-translate-y-[1px]"
+                    style={{ transitionDelay: `${i * 50}ms` }}
                   >
                     {tag}
                   </span>
@@ -155,121 +176,150 @@ export default function Hero() {
               </div>
             </div>
 
-            {/* PURPOSEFUL ACTION BUTTONS */}
+            {/* 🔥 STRONGER CTA & 1-CLICK RESUME */}
             <div className="mt-12 flex flex-wrap items-center gap-6 pl-8">
               <a 
                 href="#projects"
                 onClick={handleInteraction}
-                className="px-10 py-4 border font-bold text-[10px] tracking-[0.3em] uppercase transition-all active:scale-95 rounded-sm shadow-sm hover:shadow-md"
+                className="px-10 py-4 border font-bold text-[10px] tracking-[0.3em] uppercase transition-all hover:-translate-y-[2px] active:scale-95 rounded-sm shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
                 style={{ 
                   borderColor: 'var(--hero-accent)', 
                   color: 'var(--hero-accent)',
+                  outlineColor: 'var(--hero-accent)'
                 }}
               >
-                Explore Projects
+                See Security Projects
               </a>
 
-              {/* ✅ Converted to a trigger button */}
-              <button
-                onClick={() => {
-                  handleInteraction();
-                  setShowResumeOptions(true);
-                }}
-                className="px-8 py-4 border border-surface text-muted hover:text-foreground hover:bg-surface-strong font-mono text-[10px] uppercase tracking-[0.3em] transition-all active:scale-95 rounded-sm bg-surface"
+              <a
+                href="/Resume"
+                onClick={handleInteraction}
+                className="px-8 py-4 border border-surface text-muted hover:text-foreground hover:bg-surface-strong font-mono text-[10px] uppercase tracking-[0.3em] transition-all hover:-translate-y-[2px] active:scale-95 rounded-sm bg-surface flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-surface-strong"
               >
-                View Resume
-              </button>
+                View Resume →
+              </a>
             </div>
 
-            <p className="text-[10px] text-muted ml-8 font-mono mt-10 tracking-widest uppercase">
-              Based in India • Learning every day
-            </p>
+            {/* 🔥 RESTRUCTURED CONTACT BAR */}
+            <div className="mt-16 pl-8">
+              <div className="mb-6">
+                <h3 className="text-sm font-semibold tracking-[0.2em] text-foreground uppercase mb-2">
+                  Let's Connect
+                </h3>
+              </div>
+
+              <div className="flex flex-col gap-3 max-w-xl">
+                {/* Primary Contacts - Larger */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <a 
+                    href="https://linkedin.com/in/jothish-gandham" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="LinkedIn Profile"
+                    className="flex items-center gap-4 p-4 border border-surface bg-surface/40 hover:bg-surface hover:border-surface-strong rounded-sm group transition-all hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
+                  >
+                    <LinkedinIcon className="w-5 h-5 text-muted group-hover:text-foreground transition-colors" />
+                    <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
+                      linkedin.com/in/jothish
+                    </span>
+                  </a>
+                  
+                  <a 
+                    href="https://github.com/jothish-blip" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    aria-label="GitHub Profile"
+                    className="flex items-center gap-4 p-4 border border-surface bg-surface/40 hover:bg-surface hover:border-surface-strong rounded-sm group transition-all hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
+                  >
+                    <GithubIcon className="w-5 h-5 text-muted group-hover:text-foreground transition-colors" />
+                    <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
+                      github.com/jothish-blip
+                    </span>
+                  </a>
+                </div>
+
+                {/* Secondary Contacts - Smaller */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <a 
+                    href="mailto:jothishgandham2@gmail.com" 
+                    aria-label="Email Me"
+                    className="flex items-center gap-3 p-3 border border-surface bg-surface/20 hover:bg-surface/60 hover:border-surface-strong rounded-sm group transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
+                  >
+                    <Mail className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
+                    <span className="text-[9px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
+                      jothishgandham2@gmail.com
+                    </span>
+                  </a>
+
+                  <a 
+                    href="tel:+918374754009" 
+                    aria-label="Call Me"
+                    className="flex items-center gap-3 p-3 border border-surface bg-surface/20 hover:bg-surface/60 hover:border-surface-strong rounded-sm group transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
+                  >
+                    <Phone className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
+                    <span className="text-[9px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
+                      +91 8374754009
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </div>
 
           </div>
 
           {/* Right Column: HUD */}
           <div className={`lg:col-span-4 hidden lg:block transition-all duration-1000 delay-500 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-            <div className="border border-surface bg-surface-strong/80 backdrop-blur-md p-8 rounded-sm relative overflow-hidden group transition-colors flex flex-col justify-between h-full" style={{ '--hover-border': 'var(--hero-accent)' } as React.CSSProperties}>
+            <div className="border border-surface bg-surface-strong/80 backdrop-blur-md p-8 rounded-sm relative overflow-hidden group transition-all hover:border-[var(--hero-accent)] flex flex-col justify-between h-full shadow-lg hover:shadow-xl hover:-translate-y-1" style={{ '--hover-border': 'var(--hero-accent)' } as React.CSSProperties}>
               
               <div className="space-y-8 relative z-10">
-                <h4 className="font-mono text-[9px] tracking-[0.4em] text-muted uppercase border-b border-surface pb-4">
-                  Identity_Matrix
-                </h4>
+                <div className="border-b border-surface pb-4">
+                  <h4 className="font-mono text-[10px] font-bold tracking-[0.4em] text-foreground uppercase">
+                    JOTHISH_GANDHAM
+                  </h4>
+                  <p className="font-mono text-[8px] tracking-[0.2em] text-muted uppercase mt-2">
+                    ASPIRING SOC ANALYST
+                  </p>
+                </div>
                 
                 <div className="space-y-4 font-mono text-[10px]">
-                  <div className="flex justify-between border-b border-surface pb-2 hover:bg-surface transition-colors">
-                    <span className="text-muted uppercase tracking-tighter">Focus</span>
-                    <span style={{ color: 'var(--hero-accent)' }}>BLUE_TEAM / SOC</span>
+                  <div className="flex justify-between border-b border-surface pb-2">
+                    <span className="text-muted uppercase tracking-tighter">Role</span>
+                    <span style={{ color: 'var(--hero-accent)' }}>Security Operations</span>
                   </div>
-                  <div className="flex justify-between border-b border-surface pb-2 hover:bg-surface transition-colors">
-                    <span className="text-muted uppercase tracking-tighter">Experience</span>
-                    <span className="text-muted">Learning via Projects</span>
+                  
+                  {/* 🔥 CLEANER FOCUS LIST */}
+                  <div className="border-b border-surface pb-2">
+                    <span className="text-muted uppercase tracking-tighter block mb-3">Current Focus</span>
+                    <div className="space-y-2 text-foreground pl-1 text-[9px] tracking-widest">
+                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> SOC Operations</p>
+                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> SIEM & Log Analysis</p>
+                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> Detection Engineering</p>
+                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> Incident Response</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between border-b border-surface pb-2 hover:bg-surface transition-colors">
+                  
+                  <div className="flex flex-col gap-2 border-b border-surface pb-2">
+                    <span className="text-muted uppercase tracking-tighter">Objective</span>
+                    <span className="text-muted text-[9px] leading-relaxed">Secure a SOC Internship & defend real-world infrastructure.</span>
+                  </div>
+                  
+                  <div className="flex justify-between pt-1">
                     <span className="text-muted uppercase tracking-tighter">Status</span>
-                    <span className="text-muted uppercase">Active_Learning</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--hero-accent)' }}></div>
-                    <span className="font-mono text-[9px] text-muted uppercase tracking-widest">
-                      System_Status
+                    <span className="uppercase flex items-center gap-1.5" style={{ color: 'var(--hero-accent)' }}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
+                      Open to Opportunities
                     </span>
-                  </div>
-                  <div className="bg-surface/50 border border-surface p-3 rounded-sm">
-                    <p className="text-muted text-[10px] font-mono leading-relaxed">
-                      Actively learning and building projects. Expanding capabilities in threat detection.
-                    </p>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[9px] text-muted font-mono mt-6 border-t border-surface pt-4 uppercase tracking-widest relative z-10">
-                Still building. Still learning.
+              <p className="text-[9px] text-muted font-mono mt-8 border-t border-surface pt-4 uppercase tracking-widest relative z-10">
+                Based in India • Learning Daily
               </p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* ✅ MODAL UI ADDED HERE */}
-      {showResumeOptions && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-background border border-surface rounded-sm p-6 w-[300px] space-y-4">
-            
-            <h3 className="text-sm font-mono uppercase tracking-widest text-muted text-center pb-2">
-              Resume Options
-            </h3>
-
-            <a
-              href="/Resume"
-              className="block w-full text-center px-4 py-3 border border-surface hover:bg-surface text-foreground text-xs font-mono uppercase tracking-widest transition-colors"
-              onClick={() => setShowResumeOptions(false)}
-            >
-              View Resume (Web)
-            </a>
-
-            <a
-              href="/Resume.pdf"
-              download
-              className="block w-full text-center px-4 py-3 border border-surface hover:bg-surface text-foreground text-xs font-mono uppercase tracking-widest transition-colors"
-              onClick={() => setShowResumeOptions(false)}
-            >
-              Download Resume (PDF)
-            </a>
-
-            <button
-              onClick={() => setShowResumeOptions(false)}
-              className="text-[10px] font-mono tracking-widest text-muted hover:text-foreground uppercase w-full mt-2 transition-colors"
-            >
-              Cancel
-            </button>
-
-          </div>
-        </div>
-      )}
     </>
   );
 }

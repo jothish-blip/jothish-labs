@@ -1,8 +1,11 @@
-﻿@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* ===== ROOT THEME (LIGHT) ===== */
 :root {
   color-scheme: light;
+
   --background: #ffffff;
   --foreground: #000000;
   --surface: #f5f7fb;
@@ -13,10 +16,10 @@
   --accent-soft: rgba(8, 145, 178, 0.1);
   --accent-grid: rgba(0, 0, 0, 0.04);
 
-/* Enterprise Security Palette */
---danger: #b91c1c;
---warning: #b45309;
---success: #047857;
+  /* Enterprise Security Palette */
+  --danger: #b91c1c;
+  --warning: #b45309;
+  --success: #047857;
 
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -25,11 +28,14 @@
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
+
+  --selection-bg: rgba(34, 211, 238, 0.25);
 }
 
 /* ===== DARK MODE ===== */
 html.dark {
   color-scheme: dark;
+
   --background: #000000;
   --foreground: #e2e8f0;
   --surface: rgba(255, 255, 255, 0.04);
@@ -44,6 +50,8 @@ html.dark {
   --danger: #f87171;
   --warning: #fbbf24;
   --success: #34d399;
+
+  --selection-bg: rgba(34, 211, 238, 0.35);
 }
 
 /* ===== BASE ===== */
@@ -52,15 +60,18 @@ html {
 }
 
 body {
+  min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
-  transition: background var(--duration) var(--ease), color var(--duration) var(--ease);
-  min-height: 100vh;
+  transition:
+    background var(--duration) var(--ease),
+    color var(--duration) var(--ease);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Clean depth layer - Reduced from 0.06 to 0.03 to prevent muddy stacking */
+/* Clean depth layer */
 body::before {
   content: "";
   position: fixed;
@@ -75,21 +86,31 @@ body::before {
 }
 
 /* ===== UTILITIES ===== */
-.bg-background { background: var(--background); }
-.bg-surface { background: var(--surface); }
-.bg-surface-strong { background: var(--surface-strong); }
-.text-foreground { color: var(--foreground); }
-.text-muted { color: var(--muted); }
-.border-surface { border-color: var(--border); }
-
-:root {
-  --selection-bg: rgba(34, 211, 238, 0.25);
+.bg-background {
+  background: var(--background);
 }
 
-.dark {
-  --selection-bg: rgba(34, 211, 238, 0.35);
+.bg-surface {
+  background: var(--surface);
 }
 
+.bg-surface-strong {
+  background: var(--surface-strong);
+}
+
+.text-foreground {
+  color: var(--foreground);
+}
+
+.text-muted {
+  color: var(--muted);
+}
+
+.border-surface {
+  border-color: var(--border);
+}
+
+/* ===== TEXT SELECTION ===== */
 ::selection {
   background: var(--selection-bg);
   color: inherit;
@@ -107,19 +128,60 @@ pre::selection {
 }
 
 /* ===== ANIMATIONS ===== */
-.animate-scan { animation: scan 4s linear infinite; }
-.animate-slowPulse { animation: slowPulse 3s ease-in-out infinite; }
-.animate-fadeIn { animation: fadeIn 0.2s ease-out forwards; }
+
+.animate-scan {
+  animation: scan 4s linear infinite;
+}
+
+.animate-slowPulse {
+  animation: slowPulse 3s ease-in-out infinite;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
+}
 
 @keyframes scan {
-  0% { transform: translateY(-100%); opacity: 0; }
-  50% { opacity: 1; }
-  100% { transform: translateY(1000%); opacity: 0; }
-}
-@keyframes slowPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-@keyframes fadeIn { from { opacity: 0; backdrop-filter: blur(0px); } to { opacity: 1; backdrop-filter: blur(4px); } }
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
 
-/* 🔥 PDF SAFE MODE (fix html2canvas crash) */
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(1000%);
+    opacity: 0;
+  }
+}
+
+@keyframes slowPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+/* ===== PDF SAFE MODE ===== */
+
 .pdf-mode {
   background: #ffffff !important;
   color: #000000 !important;

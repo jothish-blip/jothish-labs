@@ -25,6 +25,7 @@ export default function Navbar() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [showResumeOptions, setShowResumeOptions] = useState(false); // NEW: Resume Modal State
 
   const lastScrollY = useRef(0);
   const scrollTimeout = useRef<number | null>(null);
@@ -84,13 +85,13 @@ export default function Navbar() {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
   };
 
-  // Lock background scroll when mobile menu is open
+  // Lock background scroll when mobile menu or resume modal is open
   useEffect(() => {
-    document.body.style.overflow = menuOpen ? "hidden" : "auto";
+    document.body.style.overflow = menuOpen || showResumeOptions ? "hidden" : "auto";
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [menuOpen]);
+  }, [menuOpen, showResumeOptions]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -330,48 +331,69 @@ export default function Navbar() {
             })}
           </div>
 
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="flex items-center justify-center w-11 h-11 rounded-full border border-surface bg-surface text-muted transition-all duration-300 hover:bg-surface-strong focus:outline-none focus:ring-2 focus:ring-cyan-500/30 active:scale-95"
-          >
-            {theme === "dark" ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-                <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414M18.364 18.364l-1.414-1.414M7.05 7.05L5.636 5.636" />
-                <circle cx="12" cy="12" r="5" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
-                <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
-              </svg>
-            )}
-          </button>
-
-          <button
-            className={`md:hidden flex items-center justify-center p-2.5 group bg-surface rounded-sm border border-surface relative z-[101] transition-opacity duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 ${
-              menuOpen ? "opacity-0 pointer-events-none" : "opacity-100 active:scale-95"
-            }`}
-            onClick={() => {
-              if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
-              setMenuOpen(true);
-            }}
-            aria-label="Open Menu"
-          >
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="w-6 h-6 text-slate-800 dark:text-slate-200"
+          {/* RIGHT ACTIONS: Resume & Theme Toggle Grouped */}
+          <div className="flex items-center gap-3 relative z-[101]">
+            <button
+              onClick={() => {
+                if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+                setShowResumeOptions(true);
+              }}
+              className="hidden md:flex items-center gap-2 px-5 py-2 border rounded-full font-mono text-[11px] tracking-widest uppercase transition-all duration-300 hover:bg-current/10 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
+              style={{ borderColor: activeColorVar, color: activeColorVar }}
             >
-              <line x1="4" y1="6" x2="20" y2="6"></line>
-              <line x1="4" y1="12" x2="20" y2="12"></line>
-              <line x1="4" y1="18" x2="20" y2="18"></line>
-            </svg>
-          </button>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              Resume
+            </button>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+              className="flex items-center justify-center w-11 h-11 rounded-full border border-surface bg-surface text-muted transition-all duration-300 hover:bg-surface-strong focus:outline-none focus:ring-2 focus:ring-cyan-500/30 active:scale-95"
+            >
+              {theme === "dark" ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+                  <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414M18.364 18.364l-1.414-1.414M7.05 7.05L5.636 5.636" />
+                  <circle cx="12" cy="12" r="5" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+                  <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
+                </svg>
+              )}
+            </button>
+
+            <button
+              className={`md:hidden flex items-center justify-center p-2.5 group bg-surface rounded-sm border border-surface transition-opacity duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 ${
+                menuOpen ? "opacity-0 pointer-events-none" : "opacity-100 active:scale-95"
+              }`}
+              onClick={() => {
+                if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+                setMenuOpen(true);
+              }}
+              aria-label="Open Menu"
+            >
+              <svg 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="w-6 h-6 text-slate-800 dark:text-slate-200"
+              >
+                <line x1="4" y1="6" x2="20" y2="6"></line>
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <line x1="4" y1="18" x2="20" y2="18"></line>
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* --- FIXED OVERLAY SECTION --- */}
@@ -440,6 +462,28 @@ export default function Navbar() {
                   </a>
                 );
               })}
+
+              <div className="w-full h-px bg-slate-200 dark:bg-zinc-800 my-1" />
+
+              {/* Mobile Menu Resume Option */}
+              <button
+                onClick={() => {
+                  if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
+                  setMenuOpen(false);
+                  setShowResumeOptions(true);
+                }}
+                className="group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 p-2 rounded-sm text-slate-500 dark:text-slate-400 w-full text-left"
+              >
+                <span className="font-mono text-xs transition-colors duration-500 ease-out">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </span>
+                <span className="text-3xl sm:text-4xl font-black tracking-tighter uppercase transition-all duration-500 ease-out hover:opacity-80 text-slate-900 dark:text-slate-50">
+                  Resume
+                </span>
+              </button>
             </div>
 
             <div className="mt-auto pt-10 border-t border-slate-200 dark:border-zinc-800 font-mono text-[9px] text-slate-500 dark:text-slate-400 flex justify-between items-center uppercase tracking-widest">
@@ -455,6 +499,41 @@ export default function Navbar() {
           </div>
         </div>
       </nav>
+
+      {/* MODAL UI (Shared for Desktop and Mobile) */}
+      {showResumeOptions && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowResumeOptions(false)}>
+          <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-sm p-6 w-[300px] space-y-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-sm font-mono uppercase tracking-widest text-slate-500 dark:text-slate-400 text-center pb-2">
+              Resume Options
+            </h3>
+            
+            <a
+              href="/Resume"
+              className="block w-full text-center px-4 py-3 border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-900 dark:text-slate-50 text-xs font-mono uppercase tracking-widest transition-colors"
+              onClick={() => setShowResumeOptions(false)}
+            >
+              View Resume (Web)
+            </a>
+
+            <a
+              href="/Resume.pdf"
+              download
+              className="block w-full text-center px-4 py-3 border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-900 dark:text-slate-50 text-xs font-mono uppercase tracking-widest transition-colors"
+              onClick={() => setShowResumeOptions(false)}
+            >
+              Download Resume (PDF)
+            </a>
+
+            <button
+              onClick={() => setShowResumeOptions(false)}
+              className="text-[10px] font-mono tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 uppercase w-full mt-2 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* NEW SIDEBAR NAVIGATION: Progress Line + Nodes + Hover Expansion */}
       {/* Hidden on Mobile (md:flex ensures desktop only) */}

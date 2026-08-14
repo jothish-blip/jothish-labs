@@ -27,7 +27,7 @@ export default function Home() {
           to ensure a consistent visual rhythm as the user scrolls.
       */}
       
-      <section id="about" className="relative py-16 sm:py-24">
+      <section id="about" className="relative py-3 sm:py-1">
         <About />
       </section>
 
