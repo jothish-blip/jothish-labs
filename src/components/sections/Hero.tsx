@@ -1,8 +1,9 @@
-﻿"use client";
-import { useEffect, useRef, useState } from "react";
-import { Mail, Phone } from "lucide-react";
+"use client";
 
-// ✅ Custom SVGs to bypass lucide-react brand export errors
+import { useEffect, useRef, useState } from "react";
+import { Mail, Phone, ArrowRight } from "lucide-react";
+
+// Custom SVGs to bypass lucide-react brand export errors
 const GithubIcon = ({ className }: { className?: string }) => (
   <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.2c3-.3 6-1.5 6-6.5a5.4 5.4 0 0 0-1.5-3.8 5.3 5.3 0 0 0-.1-3.8s-1.2-.4-3.9 1.4a13.3 13.3 0 0 0-7 0C6.2 1.6 5 2 5 2a5.3 5.3 0 0 0-.1 3.8A5.4 5.4 0 0 0 3.5 9.5c0 5 3 6.2 6 6.5a4.8 4.8 0 0 0-1 3.2v4"></path>
@@ -23,6 +24,7 @@ export default function Hero() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
     const container = containerRef.current;
     if (!container) return;
@@ -52,14 +54,12 @@ export default function Hero() {
     window.addEventListener("mousemove", move);
     animate();
 
-    // ✅ Performance: Cleanup event listener and animation frame
     return () => {
       window.removeEventListener("mousemove", move);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
-  // Micro UX: Native app feel
   const handleInteraction = () => {
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate(10);
@@ -67,259 +67,293 @@ export default function Hero() {
   };
 
   return (
-    <>
+    <div
+      ref={containerRef}
+      className="relative min-h-screen w-full text-foreground overflow-hidden flex flex-col items-center justify-center pt-28 md:pt-36 border-b border-surface" 
+    >
       {/* 
-        🎨 SYSTEM COLORS
+        LOCAL STYLES: SINGLE VIBRANT ACCENT
+        Consistent with your other sections, but highly saturated to provide
+        that "dopamine" hit in the hero.
       */}
-      <style jsx global>{`
+      <style>{`
         :root {
-          --hero-accent: #0891b2;
-          --hero-accent-glow: rgba(8, 145, 178, 0.03);
-          --hero-accent-grid: rgba(8, 145, 178, 0.08);
+          --accent-hero: #6366f1; /* Vibrant Indigo */
         }
         html.dark {
-          --hero-accent: #22d3ee;
-          --hero-accent-glow: rgba(34, 211, 238, 0.03);
-          --hero-accent-grid: rgba(34, 211, 238, 0.05);
+          --accent-hero: #818cf8; /* Bright Indigo */
+        }
+        .hero-btn-primary {
+          background-color: var(--accent-hero);
+          color: white !important;
+          border: 1px solid var(--accent-hero) !important;
+        }
+        .hero-btn-primary:hover {
+          box-shadow: 0 0 25px color-mix(in srgb, var(--accent-hero) 50%, transparent);
+          transform: translateY(-2px);
+        }
+        .hud-border-glow:hover {
+          border-color: var(--accent-hero) !important;
+          box-shadow: 0 0 30px color-mix(in srgb, var(--accent-hero) 20%, transparent);
         }
       `}</style>
 
+      {/* --- RADIOLUCENT (X-RAY) & DOPAMINE EFFECTS --- */}
+      
+      {/* 1. Static X-Ray Glow (Single Color Pop on Mount) */}
+      <div 
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[200px] md:w-[800px] md:h-[500px] blur-[100px] rounded-[100%] pointer-events-none transition-all duration-1000 ease-out ${isMounted ? "opacity-30 md:opacity-20 scale-100" : "opacity-0 scale-90"}`}
+        style={{ 
+          backgroundColor: 'var(--accent-hero)',
+          mixBlendMode: 'screen'
+        }}
+      />
+
+      {/* 2. Interactive Mouse Tracking Glow (Dopamine hit) */}
       <div
-        ref={containerRef}
-        className="relative min-h-screen w-full bg-background text-foreground overflow-hidden flex flex-col items-center justify-center pt-28 md:pt-36" 
-      >
-        {/* 🎯 SUBTLE GRID (Theme Aware) */}
-        <div 
-          className="absolute inset-0 z-[1] pointer-events-none" 
-          style={{
-            backgroundImage: `linear-gradient(to right, var(--hero-accent-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--hero-accent-grid) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px'
-          }}
-        />
+        className={`pointer-events-none absolute inset-0 z-[2] transition-opacity duration-1000 ${isMounted ? "opacity-100" : "opacity-0"}`}
+        style={{
+          background: `radial-gradient(600px circle at var(--x, -1000px) var(--y, -1000px), color-mix(in srgb, var(--accent-hero) 8%, transparent), transparent 40%)`,
+        }}
+      />
 
-        {/* 🖱️ REACTIVE GLOW */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[2]"
-          style={{
-            background: `radial-gradient(600px circle at var(--x, -1000px) var(--y, -1000px), var(--hero-accent-glow), transparent 70%)`,
-          }}
-        />
+      {/* 3. Dotted Micro-Grid Overlay */}
+      <div className="absolute inset-0 z-[1] opacity-[0.03] dark:opacity-[0.04] bg-[radial-gradient(circle,currentColor_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none" />
 
-        {/* 📺 SCANLINE */}
-        <div className="absolute inset-0 z-[3] pointer-events-none opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_2px]" />
+      {/* 4. Subtle Scanline */}
+      <div className="absolute inset-0 z-[3] pointer-events-none opacity-[0.02] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_2px]" />
 
-        {/* MAIN CONTENT */}
-        <div className="relative z-10 px-6 md:px-16 lg:px-32 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full max-w-7xl mb-24 md:mb-0">
+      {/* --- MAIN CONTENT --- */}
+      <div className="relative z-10 px-6 md:px-12 lg:px-20 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start w-full max-w-7xl mb-24 md:mb-10">
+        
+        {/* LEFT COLUMN */}
+        <div className={`lg:col-span-8 transition-all duration-1000 delay-100 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
           
-          {/* Left Column */}
-          <div className={`lg:col-span-8 transition-all duration-1000 delay-300 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+          <p 
+            className="text-[9px] font-mono mb-6 tracking-[0.24em] uppercase"
+            style={{ color: 'var(--accent-hero)' }}
+          >
+            {"// Jothish Gandham · Aspiring SOC Analyst"}
+          </p>
+          
+          {/* Availability Strip */}
+          <div className="flex flex-wrap gap-3 mb-8 font-mono text-[9px] tracking-[0.24em] uppercase">
+            <span className="flex items-center gap-2 text-foreground border border-surface px-3 py-1.5 rounded-sm bg-surface/30 backdrop-blur-sm shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Available for SOC Internship
+            </span>
+            <span className="text-muted border border-transparent px-3 py-1.5 cursor-default hover:text-foreground transition-colors">
+              Continuous Learner
+            </span>
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-5xl md:text-7xl lg:text-[80px] font-semibold tracking-tighter leading-[0.9] mb-10 uppercase text-foreground">
+            Building <span className="italic text-muted font-light">Secure</span>.<br />
+            Learning <span className="font-bold drop-shadow-sm" style={{ color: 'var(--accent-hero)' }}>Every Day</span>.
+          </h1>
+
+          <div className="max-w-2xl space-y-8">
+            <div className="border-l-2 border-transparent pl-6 lg:pl-8 space-y-4" style={{ borderImage: 'linear-gradient(to bottom, var(--accent-hero), transparent) 1' }}>
+              <p className="text-muted text-[14px] md:text-[15px] leading-relaxed">
+                I build defensive cybersecurity skills through <span className="text-foreground font-medium">home labs, SOC simulations, SIEM investigations</span>, and hands-on projects that mirror real-world analyst workflows.
+              </p>
+            </div>
             
-            <p className="text-[10px] font-mono text-muted mb-4 tracking-widest uppercase">
-              JOTHISH GANDHAM / ASPIRING SOC ANALYST
-            </p>
+            {/* Divider fading out */}
+            <div 
+              className="h-[1px] w-16 ml-6 lg:ml-8 my-8" 
+              style={{ background: 'linear-gradient(90deg, var(--accent-hero), transparent)' }}
+            ></div>
             
-            {/* ⚡ AVAILABILITY STRIP */}
-            <div className="flex flex-wrap gap-3 mb-8 font-mono text-[9px] tracking-widest uppercase transition-all">
-              <span className="flex items-center gap-1.5 text-foreground border border-surface px-2 py-1 rounded-sm bg-surface shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                AVAILABLE FOR SOC INTERNSHIP
-              </span>
-              <span className="text-muted border border-surface px-2 py-1 rounded-sm hover:text-foreground transition-colors cursor-default">CONTINUOUS LEARNER</span>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pl-6 lg:pl-8">
+              {[
+                { label: "Projects", value: "12+" },
+                { label: "Labs", value: "20+" },
+                { label: "CTFs", value: "-" },
+                { label: "Learning", value: "Daily", isAccent: true }
+              ].map((stat) => (
+                <div key={stat.label} className="space-y-1.5 group">
+                  <p className="font-mono text-[9px] text-muted uppercase tracking-[0.24em] transition-colors group-hover:text-foreground">
+                    {stat.label}
+                  </p>
+                  <p 
+                    className={`text-xl font-semibold leading-tight ${stat.isAccent ? "italic drop-shadow-sm" : "text-foreground"}`}
+                    style={stat.isAccent ? { color: 'var(--accent-hero)' } : {}}
+                  >
+                    {stat.value}
+                  </p>
+                </div>
+              ))}
             </div>
 
-            <h1 className="text-5xl md:text-[80px] font-black tracking-tighter leading-[0.85] mb-10">
-  Building <span className="italic" style={{ color: 'var(--hero-accent)' }}>Secure</span>.<br />
-  Learning <span className="underline decoration-1 underline-offset-[12px]" style={{ color: 'var(--hero-accent)' }}>Every Day</span>.
-</h1>
+            {/* Tech Tags - Vibrant Hover Effects */}
+            <div className="flex flex-wrap gap-2 pl-6 lg:pl-8 pt-4">
+              {['Network Security', 'Threat Detection', 'Incident Response', 'SIEM', 'Blue Team', 'Linux', 'SQL', 'Python'].map((tag) => (
+                <span 
+                  key={tag} 
+                  className="font-mono text-[9px] border border-surface bg-surface/20 px-2.5 py-1.5 rounded-sm text-muted uppercase tracking-[0.24em] cursor-default transition-all hover:text-white hover:border-transparent"
+                  style={{ '--hover-bg': 'var(--accent-hero)' } as React.CSSProperties}
+                >
+                  <style jsx>{` span:hover { background-color: var(--hover-bg); box-shadow: 0 0 10px color-mix(in srgb, var(--hover-bg) 40%, transparent); } `}</style>
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
 
-            <div className="max-w-2xl space-y-6">
-              <div className="border-l-2 border-surface pl-8 space-y-4">
-                {/* 🔥 PROOF-BASED INTRO */}
-                <p className="text-muted text-lg md:text-xl font-light leading-relaxed">
-                  I build defensive cybersecurity skills through <span className="text-foreground font-medium">home labs, SOC simulations, SIEM investigations</span>, and hands-on projects that mirror real-world analyst workflows.
+          {/* CTA Buttons */}
+          <div className="mt-12 flex flex-wrap items-center gap-4 pl-6 lg:pl-8">
+            <a 
+              href="#projects"
+              onClick={handleInteraction}
+              className="hero-btn-primary px-8 py-3.5 font-mono text-[9px] tracking-[0.24em] uppercase rounded-sm flex items-center gap-2 focus:outline-none transition-all duration-300"
+            >
+              See Security Projects
+            </a>
+            <a
+              href="/Resume"
+              onClick={handleInteraction}
+              className="px-8 py-3.5 border border-surface bg-surface/20 text-foreground hover:bg-surface font-mono text-[9px] uppercase tracking-[0.24em] transition-all duration-300 hover:-translate-y-[2px] rounded-sm flex items-center gap-2 focus:outline-none"
+            >
+              View Resume <ArrowRight size={12} />
+            </a>
+          </div>
+
+          {/* Contact Bar */}
+          <div className="mt-16 pl-6 lg:pl-8 border-t border-surface pt-8">
+            <h3 className="font-mono text-[9px] tracking-[0.24em] text-muted uppercase mb-5">
+              Let&apos;s Connect
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+              
+              <a 
+                href="https://linkedin.com/in/jothish-gandham" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
+              >
+                <LinkedinIcon className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
+                <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-[0.1em] truncate transition-colors">
+                  linkedin.com/in/jothish
+                </span>
+              </a>
+              
+              <a 
+                href="https://github.com/jothish-blip" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
+              >
+                <GithubIcon className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
+                <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-[0.1em] truncate transition-colors">
+                  github.com/jothish-blip
+                </span>
+              </a>
+
+              <a 
+                href="mailto:jothishgandham2@gmail.com" 
+                className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
+              >
+                <Mail className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
+                <span className="text-[9px] font-mono text-muted group-hover:text-foreground tracking-[0.1em] truncate transition-colors">
+                  jothishgandham2@gmail.com
+                </span>
+              </a>
+
+              <a 
+                href="tel:+918374754009" 
+                className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
+              >
+                <Phone className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
+                <span className="text-[9px] font-mono text-muted group-hover:text-foreground tracking-[0.1em] truncate transition-colors">
+                  +91 8374754009
+                </span>
+              </a>
+
+            </div>
+          </div>
+
+        </div>
+
+        {/* RIGHT COLUMN: HUD */}
+        <div className={`lg:col-span-4 hidden lg:block transition-all duration-1000 delay-300 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
+          <div className="hud-border-glow border border-surface bg-background/50 backdrop-blur-md p-8 rounded-md relative overflow-hidden flex flex-col justify-between min-h-[500px] transition-all duration-500">
+            
+            <div className="space-y-8 relative z-10">
+              <div className="border-b border-surface pb-5">
+                <h4 className="font-mono text-[10px] font-bold tracking-[0.24em] text-foreground uppercase">
+                  Jothish_Gandham
+                </h4>
+                <p 
+                  className="font-mono text-[9px] tracking-[0.24em] uppercase mt-2 font-bold drop-shadow-sm"
+                  style={{ color: 'var(--accent-hero)' }}
+                >
+                  Aspiring SOC Analyst
                 </p>
               </div>
               
-              <div className="h-px w-16 bg-surface ml-8 my-8"></div>
-              
-              {/* 🔥 QUANTIFIABLE PROOF SIGNALS */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pl-8 font-mono">
-                <div className="space-y-1 group">
-                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">Projects</p>
-                  <p className="text-lg sm:text-xl text-foreground font-bold leading-tight">12+</p>
-                </div>
-                <div className="space-y-1 group">
-                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">Labs</p>
-                  <p className="text-lg sm:text-xl text-foreground font-bold leading-tight">20+</p>
-                </div>
-                <div className="space-y-1 group">
-                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">CTFs</p>
-                  <p className="text-lg sm:text-xl text-foreground font-bold leading-tight">-</p>
-                </div>
-                <div className="space-y-1 group">
-                  <p className="text-[10px] text-muted uppercase tracking-widest transition-colors group-hover:text-foreground">Learning</p>
-                  <p className="text-sm sm:text-base font-bold italic leading-tight mt-1" style={{ color: 'var(--hero-accent)' }}>Daily</p>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="flex flex-wrap gap-2 pl-8 pt-4">
-                {['Network Security', 'Threat Detection', 'Incident Response', 'SIEM', 'Blue Team', 'Linux' , 'SQL' , 'Python' ].map((tag, i) => (
+              <div className="space-y-6">
+                
+                <div className="flex flex-col gap-2 border-b border-surface pb-4">
+                  <span className="font-mono text-[9px] text-muted uppercase tracking-[0.24em]">Role</span>
                   <span 
-                    key={tag} 
-                    className="group text-[8px] font-mono border border-surface px-2 py-1 rounded-sm text-muted uppercase tracking-widest transition-all cursor-default bg-surface hover:text-foreground hover:border-surface-strong hover:-translate-y-[1px]"
-                    style={{ transitionDelay: `${i * 50}ms` }}
+                    className="font-mono text-[10px] uppercase tracking-[0.24em] font-medium"
+                    style={{ color: 'var(--accent-hero)' }}
                   >
-                    {tag}
+                    Security Operations
                   </span>
-                ))}
-              </div>
-            </div>
-
-            {/* 🔥 STRONGER CTA & 1-CLICK RESUME */}
-            <div className="mt-12 flex flex-wrap items-center gap-6 pl-8">
-              <a 
-                href="#projects"
-                onClick={handleInteraction}
-                className="px-10 py-4 border font-bold text-[10px] tracking-[0.3em] uppercase transition-all hover:-translate-y-[2px] active:scale-95 rounded-sm shadow-sm hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
-                style={{ 
-                  borderColor: 'var(--hero-accent)', 
-                  color: 'var(--hero-accent)',
-                  outlineColor: 'var(--hero-accent)'
-                }}
-              >
-                See Security Projects
-              </a>
-
-              <a
-                href="/Resume"
-                onClick={handleInteraction}
-                className="px-8 py-4 border border-surface text-muted hover:text-foreground hover:bg-surface-strong font-mono text-[10px] uppercase tracking-[0.3em] transition-all hover:-translate-y-[2px] active:scale-95 rounded-sm bg-surface flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-surface-strong"
-              >
-                View Resume →
-              </a>
-            </div>
-
-            {/* 🔥 RESTRUCTURED CONTACT BAR */}
-            <div className="mt-16 pl-8">
-              <div className="mb-6">
-                <h3 className="text-sm font-semibold tracking-[0.2em] text-foreground uppercase mb-2">
-                  Let's Connect
-                </h3>
-              </div>
-
-              <div className="flex flex-col gap-3 max-w-xl">
-                {/* Primary Contacts - Larger */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <a 
-                    href="https://linkedin.com/in/jothish-gandham" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    aria-label="LinkedIn Profile"
-                    className="flex items-center gap-4 p-4 border border-surface bg-surface/40 hover:bg-surface hover:border-surface-strong rounded-sm group transition-all hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
-                  >
-                    <LinkedinIcon className="w-5 h-5 text-muted group-hover:text-foreground transition-colors" />
-                    <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
-                      linkedin.com/in/jothish
-                    </span>
-                  </a>
-                  
-                  <a 
-                    href="https://github.com/jothish-blip" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    aria-label="GitHub Profile"
-                    className="flex items-center gap-4 p-4 border border-surface bg-surface/40 hover:bg-surface hover:border-surface-strong rounded-sm group transition-all hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
-                  >
-                    <GithubIcon className="w-5 h-5 text-muted group-hover:text-foreground transition-colors" />
-                    <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
-                      github.com/jothish-blip
-                    </span>
-                  </a>
-                </div>
-
-                {/* Secondary Contacts - Smaller */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <a 
-                    href="mailto:jothishgandham2@gmail.com" 
-                    aria-label="Email Me"
-                    className="flex items-center gap-3 p-3 border border-surface bg-surface/20 hover:bg-surface/60 hover:border-surface-strong rounded-sm group transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
-                  >
-                    <Mail className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
-                    <span className="text-[9px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
-                      jothishgandham2@gmail.com
-                    </span>
-                  </a>
-
-                  <a 
-                    href="tel:+918374754009" 
-                    aria-label="Call Me"
-                    className="flex items-center gap-3 p-3 border border-surface bg-surface/20 hover:bg-surface/60 hover:border-surface-strong rounded-sm group transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-strong"
-                  >
-                    <Phone className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
-                    <span className="text-[9px] font-mono text-muted group-hover:text-foreground tracking-widest truncate transition-colors">
-                      +91 8374754009
-                    </span>
-                  </a>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Right Column: HUD */}
-          <div className={`lg:col-span-4 hidden lg:block transition-all duration-1000 delay-500 ${isMounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}>
-            <div className="border border-surface bg-surface-strong/80 backdrop-blur-md p-8 rounded-sm relative overflow-hidden group transition-all hover:border-[var(--hero-accent)] flex flex-col justify-between h-full shadow-lg hover:shadow-xl hover:-translate-y-1" style={{ '--hover-border': 'var(--hero-accent)' } as React.CSSProperties}>
-              
-              <div className="space-y-8 relative z-10">
-                <div className="border-b border-surface pb-4">
-                  <h4 className="font-mono text-[10px] font-bold tracking-[0.4em] text-foreground uppercase">
-                    JOTHISH_GANDHAM
-                  </h4>
-                  <p className="font-mono text-[8px] tracking-[0.2em] text-muted uppercase mt-2">
-                    ASPIRING SOC ANALYST
-                  </p>
                 </div>
                 
-                <div className="space-y-4 font-mono text-[10px]">
-                  <div className="flex justify-between border-b border-surface pb-2">
-                    <span className="text-muted uppercase tracking-tighter">Role</span>
-                    <span style={{ color: 'var(--hero-accent)' }}>Security Operations</span>
-                  </div>
-                  
-                  {/* 🔥 CLEANER FOCUS LIST */}
-                  <div className="border-b border-surface pb-2">
-                    <span className="text-muted uppercase tracking-tighter block mb-3">Current Focus</span>
-                    <div className="space-y-2 text-foreground pl-1 text-[9px] tracking-widest">
-                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> SOC Operations</p>
-                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> SIEM & Log Analysis</p>
-                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> Detection Engineering</p>
-                      <p className="flex items-center gap-2"><span style={{ color: 'var(--hero-accent)' }}>✓</span> Incident Response</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2 border-b border-surface pb-2">
-                    <span className="text-muted uppercase tracking-tighter">Objective</span>
-                    <span className="text-muted text-[9px] leading-relaxed">Secure a SOC Internship & defend real-world infrastructure.</span>
-                  </div>
-                  
-                  <div className="flex justify-between pt-1">
-                    <span className="text-muted uppercase tracking-tighter">Status</span>
-                    <span className="uppercase flex items-center gap-1.5" style={{ color: 'var(--hero-accent)' }}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>
-                      Open to Opportunities
-                    </span>
+                <div className="border-b border-surface pb-4">
+                  <span className="font-mono text-[9px] text-muted uppercase tracking-[0.24em] block mb-3">Current Focus</span>
+                  <div className="space-y-2.5 font-mono text-[9px] tracking-[0.24em] uppercase text-foreground">
+                    <p className="flex items-center gap-2.5">
+                      <span className="h-1.5 w-1.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: 'var(--accent-hero)', color: 'var(--accent-hero)' }}></span> 
+                      SOC Operations
+                    </p>
+                    <p className="flex items-center gap-2.5">
+                      <span className="h-1.5 w-1.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: 'var(--accent-hero)', color: 'var(--accent-hero)' }}></span> 
+                      SIEM & Log Analysis
+                    </p>
+                    <p className="flex items-center gap-2.5">
+                      <span className="h-1.5 w-1.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: 'var(--accent-hero)', color: 'var(--accent-hero)' }}></span> 
+                      Detection Engineering
+                    </p>
+                    <p className="flex items-center gap-2.5">
+                      <span className="h-1.5 w-1.5 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: 'var(--accent-hero)', color: 'var(--accent-hero)' }}></span> 
+                      Incident Response
+                    </p>
                   </div>
                 </div>
-              </div>
+                
+                <div className="flex flex-col gap-3 border-b border-surface pb-4">
+                  <span className="font-mono text-[9px] text-muted uppercase tracking-[0.24em]">Objective</span>
+                  <span className="text-muted text-[12px] leading-relaxed">
+                    Secure a SOC Internship & defend real-world infrastructure.
+                  </span>
+                </div>
+                
+                <div className="flex justify-between items-center pt-2">
+                  <span className="font-mono text-[9px] text-muted uppercase tracking-[0.24em]">Status</span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.24em] text-emerald-500 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_currentColor]"></span>
+                    Available
+                  </span>
+                </div>
 
-              <p className="text-[9px] text-muted font-mono mt-8 border-t border-surface pt-4 uppercase tracking-widest relative z-10">
-                Based in India • Learning Daily
-              </p>
+              </div>
             </div>
+
+            <p className="text-[9px] text-muted font-mono mt-8 border-t border-surface pt-5 uppercase tracking-[0.24em] flex justify-between relative z-10">
+              <span>Based in India</span>
+              <span>Learning Daily</span>
+            </p>
           </div>
         </div>
+
       </div>
-    </>
+    </div>
   );
 }

@@ -1,52 +1,42 @@
-export interface Asset {
-  name: string;
-  type: string; // 'pdf' | 'image'
-  url: string;
-  isPrimary: boolean;
+export interface ProjectImages {
+  cover?: string;
+  gallery?: string[];
 }
 
-export interface ChecklistItem {
-  control: string;
-  status: string; // 'Verified' | 'Failed'
-  note: string;
-}
-
-export interface TimelineEvent {
-  title: string;
-  desc: string;
-  tag: string;
-}
-
-export interface PlaybackRow {
-  [key: string]: string | number;
-}
-
-export interface PlaybackStep {
-  step: string;
-  title: string;
-  intent: string;
-  query: string;
-  delta: string;
-  anomaly?: string;
-  logs: string[];
-  resultRows: PlaybackRow[];
-  linkedControl: string;
-}
-
-export interface CaseData {
+export interface ProjectData {
   id: string;
-  category: string;
+  projectNumber: string;
   title: string;
-  status: string;
-  riskScore: number;    // Changed from string to number for logic operations
-  riskLevel: string;
-  vulnerabilities: number;
-  failedControls: number; // Renamed from controlsFailed for clarity
   description: string;
-  summary: string;      // Renamed from investigationNotes to align with data
-  timeline?: TimelineEvent[];
-  playback?: PlaybackStep[];
-  checklist: ChecklistItem[];
-  recommendations: string[];
-  assets: Asset[];
+  image?: string; // Legacy support
+  images?: ProjectImages;
+  imageAlt?: string;
+  category: string;
+  status: string; // Meaningful labels like 'Case Study', 'Security Audit', 'Detection Lab'
+  technologies: string[];
+  skills: string[];
+  githubUrl?: string;
+  readmeUrl?: string;
+  featured: boolean;
+  childProjects?: ChildProjectData[];
+  
+  // Specific details for the workspace view
+  whyBuilt?: string;
+  whatWorkedOn?: string;
+  outcome?: string;
+}
+
+export interface ChildProjectData {
+  id: string;
+  projectNumber: string;
+  title: string;
+  description: string;
+  image?: string;
+  images?: ProjectImages;
+  imageAlt?: string;
+  technologies: string[];
+  skills: string[];
+  outcome?: string;
+  githubUrl?: string;
+  readmeUrl?: string;
 }

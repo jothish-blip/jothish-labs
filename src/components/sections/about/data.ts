@@ -31,7 +31,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
     },
     credlyBadge: {
       image: "/assets/badges/google-cybersecurity.png",
-      badgeUrl: "https://www.credly.com/badges/cybersecurity",
+      badgeUrl: "https://www.credly.com/badges/320dca9f-0ea2-462d-ae06-22028797d8b3",
       issuedDate: "July 2026",
       explanation: "Issued by Google. Earners of this badge have demonstrated a foundational understanding of cybersecurity principles, networking, incident response, and risk management."
     },
@@ -41,7 +41,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Foundations of Cybersecurity",
         description: "An introduction to the cybersecurity profession, core concepts, and ethical principles.",
         image: "/assets/certifications/course-1.jpg",
-        credentialUrl: "https://coursera.org/verify/course-1",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/WMVGH5P4O31L",
         issuedDate: "July 2026",
         skills: ["Cybersecurity Ethics", "Historical Context", "Security Domains"],
         takeaways: [
@@ -56,7 +56,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Play It Safe: Manage Security Risks",
         description: "Risk management frameworks, compliance, and auditing in cybersecurity.",
         image: "/assets/certifications/course-2.jpg",
-        credentialUrl: "https://coursera.org/verify/course-2",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/U10F6GR77NV3",
         issuedDate: "July 2026",
         skills: ["Risk Assessment", "NIST CSF", "Auditing"],
         takeaways: [
@@ -71,7 +71,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Connect and Protect: Networks and Network Security",
         description: "Deep dive into network architecture, defense, and operations.",
         image: "/assets/certifications/course-3.jpg",
-        credentialUrl: "https://coursera.org/verify/course-3",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/XPET9A8VTGAN",
         issuedDate: "July 2026",
         skills: ["TCP/IP", "Wireshark", "Network Defense"],
         takeaways: [
@@ -86,7 +86,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Tools of the Trade: Linux and SQL",
         description: "Practical application of Linux CLI and SQL databases for security tasks.",
         image: "/assets/certifications/course-4.jpg",
-        credentialUrl: "https://coursera.org/verify/course-4",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/563X88VIAKFC",
         issuedDate: "July 2026",
         skills: ["Linux CLI", "Bash Scripting", "SQL Queries"],
         takeaways: [
@@ -101,7 +101,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Assets, Threats, and Vulnerabilities",
         description: "Identifying vulnerabilities, managing threats, and understanding cryptography.",
         image: "/assets/certifications/course-5.jpg",
-        credentialUrl: "https://coursera.org/verify/course-5",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/XNWU15BNKKC3",
         issuedDate: "July 2026",
         skills: ["Threat Modeling", "Vulnerability Assessment", "Cryptography"],
         takeaways: [
@@ -116,7 +116,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Sound the Alarm: Detection and Response",
         description: "Handling security incidents, log analysis, and utilizing SIEM tools.",
         image: "/assets/certifications/course-6.jpg",
-        credentialUrl: "https://coursera.org/verify/course-6",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/OXPC0NE8U1MY",
         issuedDate: "July 2026",
         skills: ["Incident Response", "SIEM", "IDS/IPS"],
         takeaways: [
@@ -131,7 +131,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Automate Cybersecurity Tasks with Python",
         description: "Writing Python scripts to automate repetitive security tasks.",
         image: "/assets/certifications/course-7.jpg",
-        credentialUrl: "https://coursera.org/verify/course-7",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/FU3K9N6IUZWI",
         issuedDate: "July 2026",
         skills: ["Python", "Automation", "Data Parsing"],
         takeaways: [
@@ -146,7 +146,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
         title: "Put It to Work: Prepare for Cybersecurity Jobs",
         description: "Applying concepts to real-world scenarios and career readiness.",
         image: "/assets/certifications/course-8.jpg",
-        credentialUrl: "https://coursera.org/verify/course-8",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/5I5Y9XLZUBY3",
         issuedDate: "July 2026",
         skills: ["Escalation", "Communication", "Career Readiness"],
         takeaways: [
@@ -188,18 +188,18 @@ export const googleSpecializations: GoogleSpecialization[] = [
     },
     credlyBadge: {
       image: "/assets/badges/google-network-security.png",
-      badgeUrl: "https://www.credly.com/badges/network-security",
+      badgeUrl: "https://www.credly.com/badges/531be077-7eb4-4c27-a2ff-affa5d58905d",
       issuedDate: "August 2026",
       explanation: "Issued by Google. Earners have demonstrated proficiency in configuring, maintaining, and securing robust network infrastructures, particularly in cloud environments."
     },
     courses: [
       {
-        id: "networking-fundamentals",
-        title: "Networking Fundamentals in Google Cloud",
+        id: "networking-architecture",
+        title: "Networking Architecture",
         description: "Learn the core concepts of cloud networking and architecture.",
         image: "/assets/certifications/net-course-1.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-1",
-        issuedDate: "August 2026",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/8J86G28U5R17",
+        issuedDate: "July 2026",
         skills: ["VPC", "Subnets", "Routing"],
         takeaways: [
           "Virtual Private Cloud (VPC) design",
@@ -209,12 +209,12 @@ export const googleSpecializations: GoogleSpecialization[] = [
         ]
       },
       {
-        id: "hybrid-connectivity",
-        title: "Hybrid Connectivity and Network Operations",
+        id: "Network Operations",
+        title: "Network Operations",
         description: "Connect on-premise networks securely to the cloud environment.",
         image: "/assets/certifications/net-course-2.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-2",
-        issuedDate: "August 2026",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/JLK1LMVAJMU1",
+        issuedDate: "July 2026",
         skills: ["Cloud VPN", "Cloud Interconnect", "BGP"],
         takeaways: [
           "Deploying HA VPNs",
@@ -224,11 +224,11 @@ export const googleSpecializations: GoogleSpecialization[] = [
         ]
       },
       {
-        id: "network-security-vpc",
-        title: "Securing the Virtual Private Cloud",
+        id: "Secure Against Network Intrusions",
+        title: "Secure Against Network Intrusions",
         description: "Implement advanced VPC security controls and firewall policies.",
         image: "/assets/certifications/net-course-3.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-3",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/RJ6TG4FID5M8",
         issuedDate: "August 2026",
         skills: ["Firewalls", "Identity-Aware Proxy", "VPC Service Controls"],
         takeaways: [
@@ -239,11 +239,11 @@ export const googleSpecializations: GoogleSpecialization[] = [
         ]
       },
       {
-        id: "cloud-armor-waf",
-        title: "Protecting Applications with Cloud Armor",
+        id: "Security Hardening",
+        title: "Security Hardening",
         description: "Deploying Web Application Firewalls (WAF) to protect against exploits and DDoS.",
         image: "/assets/certifications/net-course-4.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-4",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/LOVSLJDQ5FK8",
         issuedDate: "August 2026",
         skills: ["Cloud Armor", "WAF", "DDoS Protection"],
         takeaways: [
@@ -254,11 +254,11 @@ export const googleSpecializations: GoogleSpecialization[] = [
         ]
       },
       {
-        id: "load-balancing-traffic",
-        title: "Load Balancing and Traffic Management",
+        id: "Introduction to Detection and Incident Response",
+        title: "Introduction to Detection and Incident Response",
         description: "Distributing traffic securely and efficiently across global endpoints.",
         image: "/assets/certifications/net-course-5.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-5",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/VPPTDYMGRUNL",
         issuedDate: "August 2026",
         skills: ["Cloud Load Balancing", "SSL/TLS", "Traffic Management"],
         takeaways: [
@@ -269,11 +269,11 @@ export const googleSpecializations: GoogleSpecialization[] = [
         ]
       },
       {
-        id: "network-monitoring-logging",
-        title: "Network Monitoring and Logging",
+        id: "Network Monitoring and Analysis",
+        title: "Network Monitoring and Analysis",
         description: "Gaining visibility into network traffic anomalies and security events.",
         image: "/assets/certifications/net-course-6.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-6",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/D9KS0MHAB938",
         issuedDate: "August 2026",
         skills: ["VPC Flow Logs", "Packet Mirroring", "Cloud Logging"],
         takeaways: [
@@ -284,11 +284,11 @@ export const googleSpecializations: GoogleSpecialization[] = [
         ]
       },
       {
-        id: "network-security-best-practices",
-        title: "Network Security Best Practices",
+        id: "Network Traffic and Logs Using IDS and SIEM Tools",
+        title: "Network Traffic and Logs Using IDS and SIEM Tools",
         description: "Implementing zero trust architectures and holistic network defense.",
         image: "/assets/certifications/net-course-7.jpg",
-        credentialUrl: "https://coursera.org/verify/net-course-7",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/PK49VJU0K8A0",
         issuedDate: "August 2026",
         skills: ["Zero Trust", "Security Architecture", "Best Practices"],
         takeaways: [
@@ -315,7 +315,7 @@ export const googleSpecializations: GoogleSpecialization[] = [
     highlights: ["AI Prompting", "Generative AI", "Prompt Chaining", "Data Analysis"],
     professionalCertificate: {
       image: "/assets/certifications/google-prompting-essentials.jpg",
-      credentialUrl: "https://coursera.org/verify/professional-cert/prompting-essentials",
+      credentialUrl: "https://www.coursera.org/account/accomplishments/specialization/G06C25GQAAM5",
       issuedDate: "June 2026",
       overview: "A specialized training program designed to teach the fundamentals and advanced techniques of interacting with Large Language Models (LLMs).",
       learningOutcomes: [
@@ -330,17 +330,17 @@ export const googleSpecializations: GoogleSpecialization[] = [
     },
     credlyBadge: {
       image: "/assets/badges/google-prompting-essentials.png",
-      badgeUrl: "https://www.credly.com/badges/prompting-essentials",
+      badgeUrl: "https://www.credly.com/badges/97c8f2be-05d1-4ef6-9006-38b806da0f53",
       issuedDate: "June 2026",
       explanation: "Issued by Google. Earners have proven their ability to efficiently guide Generative AI tools to solve problems, summarize data, and automate tasks through advanced prompting methodologies."
     },
     courses: [
       {
-        id: "intro-generative-ai",
-        title: "Introduction to Generative AI",
+        id: "Start Writing Prompts like a Pro",
+        title: "Start Writing Prompts like a Pro",
         description: "Understanding LLMs and the fundamentals of AI interaction.",
         image: "/assets/certifications/ai-course-1.jpg",
-        credentialUrl: "https://coursera.org/verify/ai-course-1",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/K4FYEICAKPSE",
         issuedDate: "June 2026",
         skills: ["Generative AI", "LLM Fundamentals", "AI Literacy"],
         takeaways: [
@@ -352,10 +352,10 @@ export const googleSpecializations: GoogleSpecialization[] = [
       },
       {
         id: "design-effective-prompts",
-        title: "Design Effective Prompts",
+        title: "Design Prompts for Everyday Work Tasks",
         description: "Learning the five-step framework for specific and structured prompts.",
         image: "/assets/certifications/ai-course-2.jpg",
-        credentialUrl: "https://coursera.org/verify/ai-course-2",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/CBA1LAPK2XYK",
         issuedDate: "June 2026",
         skills: ["Prompt Engineering", "Structured Prompting", "Context Setting"],
         takeaways: [
@@ -367,10 +367,10 @@ export const googleSpecializations: GoogleSpecialization[] = [
       },
       {
         id: "advanced-prompt-chaining",
-        title: "Advanced Techniques: Prompt Chaining",
+        title: "Speed Up Data Analysis and Presentation Building",
         description: "Breaking complex tasks into sequences of chained prompts.",
         image: "/assets/certifications/ai-course-3.jpg",
-        credentialUrl: "https://coursera.org/verify/ai-course-3",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/H2V3DPEHFNSG",
         issuedDate: "June 2026",
         skills: ["Prompt Chaining", "Multimodal Prompting", "Iterative Refinement"],
         takeaways: [
@@ -382,10 +382,10 @@ export const googleSpecializations: GoogleSpecialization[] = [
       },
       {
         id: "ai-for-productivity",
-        title: "AI for Data Analysis and Productivity",
+        title: "Use AI as a Creative or Expert Partner",
         description: "Using prompts to analyze data, summarize information, and automate tasks efficiently.",
         image: "/assets/certifications/ai-course-4.jpg",
-        credentialUrl: "https://coursera.org/verify/ai-course-4",
+        credentialUrl: "https://www.coursera.org/account/accomplishments/verify/114Z2Z1I7E4W",
         issuedDate: "June 2026",
         skills: ["Data Analysis", "Summarization", "Workflow Automation"],
         takeaways: [

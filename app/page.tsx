@@ -5,12 +5,20 @@ import Skills from "@/components/sections/Skills";
 import Terminal from "@/components/sections/Terminal";
 import Contact from "@/components/sections/Contact";
 import Navbar from "@/components/ui/Navbar";
-import Resume from "./Resume/page";
 export default function Home() {
   return (
     /* 1 & 5. Theme-aware colors and selection highlighting */
-    <main className="bg-background text-foreground overflow-x-hidden scroll-smooth selection:bg-[var(--accent-soft)] selection:text-[var(--accent)]">
+    <main className="relative bg-background text-foreground overflow-x-hidden scroll-smooth selection:bg-[var(--accent-soft)] selection:text-[var(--accent)]">
       
+      {/* GLOBAL BACKGROUND GRID */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(to right, var(--accent-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--accent-grid) 1px, transparent 1px)`,
+          backgroundSize: "70px 70px",
+        }}
+      />
+
       {/* Fixed Navbar handles its own z-index */}
       <Navbar />
 

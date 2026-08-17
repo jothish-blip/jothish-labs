@@ -13,13 +13,13 @@ type ContactSession = {
 };
 
 // --- GLOBAL STATE & ANALYTICS ---
-export let analytics = {
+export const analytics = {
   totalCommands: 0,
   commandUsage: {} as Record<string, number>,
   lastCommand: "",
 };
 
-export let state = {
+export const state = {
   isRoot: false,
   cmdHistory: [] as string[],
   contactSession: {
@@ -34,7 +34,7 @@ function output(text: string): CommandResult {
   return text.trim();
 }
 
-function stream(lines: string[], delay = 50): CommandResult {
+function stream(lines: string[], delay = 30): CommandResult {
   return { type: "stream", lines, delay };
 }
 
@@ -48,41 +48,55 @@ const commands: Record<string, Command> = {
   help: {
     name: "help",
     execute: () => output(`
-AVAILABLE PROTOCOLS:
---------------------------------------------------
-whoami      - Display current user identity
-about       - My learning journey
-skills      - Current toolset & focus
-projects    - List investigative case files
-contact     - Let's connect
-ls          - List directory contents
-cat <file>  - Read file contents
-ping <tgt>  - Check connection to target
-whois <dom> - Domain registry lookup
-open <sec>  - Navigate portfolio (e.g., open projects)
-clear       - Purge terminal buffer
-exit        - Terminate terminal UI
---------------------------------------------------
-SYSTEM / POWER COMMANDS:
-history     - View your command history
-stats       - View session statistics
-time        - Display local time
-search      - Query the system
-echo        - Print text to screen
-learn       - Enter learning mode
-suggest     - Get a random command suggestion
-system      - View core system status
-analytics   - View session analytics breakdown
---------------------------------------------------
-ALIASES: p (projects), s (skills), a (about), c (contact)`)
+Navigation
+  about           Profile and background
+  projects        List investigative case files
+  skills          Technical capabilities
+  certifications  View achievements
+  resume          Download / view resume
+  education       Academic background
+  experience      Professional journey
+
+Contact
+  contact         Initialize contact wizard
+  social          View all links
+  email           Direct email address
+  github          GitHub profile
+  linkedin        LinkedIn profile
+
+Utilities
+  clear           Purge terminal buffer
+  whoami          Display current identity
+  pwd             Print working directory
+  ls              List directory contents
+  cat             Read file contents
+  theme           Toggle system theme
+  banner          Display terminal banner
+  stats           View system statistics
+`)
+  },
+  banner: {
+    name: "banner",
+    execute: () => output(`
+JOTHISH TERMINAL
+Cybersecurity Portfolio Interface
+Version 1.0.0
+Status: Active
+
+Type "help" to begin.
+`)
   },
   whoami: {
     name: "whoami",
     execute: () => output(`
-USER: ${state.isRoot ? "root (Admin)" : "jothish (Analyst)"}
-ROLE: Cybersecurity Learner & Builder
-STATUS: Active
-PERMISSIONS: ${state.isRoot ? "FULL_SYSTEM_ACCESS" : "STANDARD_USER_SHELL"}`)
+● Name: Jothish Gandham
+● Role: Cybersecurity Learner & Builder
+● Location: India
+● Current Focus: SOC Operations & Detection Engineering
+● Learning: Reverse Engineering, Malware Analysis
+● Interests: System Internals, Automation
+● Career Goal: Build resilient systems and hunt threats
+`)
   },
   about: {
     name: "about",
@@ -92,193 +106,196 @@ PERMISSIONS: ${state.isRoot ? "FULL_SYSTEM_ACCESS" : "STANDARD_USER_SHELL"}`)
       "I didn’t start with everything figured out.",
       "I started by trying to understand what happens when systems break.",
       "",
-      "Now I’m focused on:",
-      "- observing system behavior",
-      "- understanding patterns",
-      "- learning through real experimentation",
+      "Now I’m focused on observing system behavior, understanding patterns, and learning through real experimentation.",
+      "I focus heavily on SOC operations, SIEM rules, and network forensics.",
       "",
       "Still learning. Still building."
-    ], 60)
+    ])
   },
+  resume: {
+    name: "resume",
+    execute: () => "__OPEN_RESUME__"
+  },
+  social: {
+    name: "social",
+    execute: () => output(`
+● Email: jothishgandham2@gmail.com
+● GitHub: github.com/jothish-blip
+● LinkedIn: linkedin.com/in/jothish-gandham-5b90b334a
+`)
+  },
+  email: { name: "email", execute: () => output("jothishgandham2@gmail.com") },
+  github: { name: "github", execute: () => output("github.com/jothish-blip") },
+  linkedin: { name: "linkedin", execute: () => output("linkedin.com/in/jothish-gandham-5b90b334a") },
+  
   skills: {
     name: "skills",
-    execute: () => stream([
-      "Initializing skill modules...",
-      "",
-      "Core Tools:",
-      "• Linux (daily usage)",
-      "• Wireshark (packet inspection)",
-      "• tcpdump (command-line capture)",
-      "• SQL (data filtering)",
-      "",
-      "Focus Areas:",
-      "• Log Analysis",
-      "• Network Behavior",
-      "• Pattern Detection",
-      "",
-      "Status: Learning & improving every day."
-    ], 50)
+    execute: (args) => {
+      if (!args[1]) {
+        return output(`
+📁 SOC Operations
+📁 Network Security
+📁 Digital Forensics
+📁 Incident Response
+📁 Linux
+📁 Windows
+📁 Threat Hunting
+📁 Python
+📁 Automation
+📁 OSINT
+📁 Cloud Security
+
+▸ Tip: Use 'skills <category>' (e.g., 'skills linux') for details.
+`);
+      }
+      
+      const cat = args[1].toLowerCase();
+      switch(cat) {
+        case "soc": return output("● SOC Operations\nSIEM (Splunk, Elastic), Log Analysis, Alert Triage, Playbook execution.");
+        case "network": return output("● Network Security\nWireshark, tcpdump, Snort, Suricata, Firewall configuration.");
+        case "linux": return output("● Linux\nKali Linux, Ubuntu, Bash Scripting, System Administration, Hardening.");
+        case "windows": return output("● Windows\nActive Directory, Sysinternals, PowerShell, Registry Analysis.");
+        case "forensics": return output("● Digital Forensics\nAutopsy, Volatility, Disk imaging, Memory analysis.");
+        case "python": return output("● Python\nScripting, Automation, Log Parsing, API Integration.");
+        default: return output(`! Unknown skill category: ${cat}`);
+      }
+    }
   },
+  
+  certifications: {
+    name: "certifications",
+    execute: () => output(`
+◆ Google
+◆ CompTIA
+
+Certification counts
+✓ Completed: 3
+▸ In Progress: 1
+
+▸ Tip: Use 'google' or 'comptia' to see specifics.
+`)
+  },
+  google: {
+    name: "google",
+    execute: (args) => {
+      if (!args[1]) {
+        return output(`
+◆ Google Cybersecurity Professional Certificate
+◆ Google Network Security Specialization
+◆ Google Prompting Essentials
+
+Completion dates: 2024-2025
+Course counts: 8 core courses
+
+▸ Tip: Use 'google cybersecurity' or 'google networking' for details.
+`);
+      }
+      const cat = args.slice(1).join(" ").toLowerCase();
+      if (cat.includes("cybersecurity")) return output("● Google Cybersecurity Professional Certificate\n8 courses.\nCore skills: SIEM, Python, Linux, SQL, Packets.\nStatus: ✓ Completed");
+      if (cat.includes("networking") || cat.includes("network")) return output("● Google Network Security Specialization\nStatus: ✓ Completed");
+      if (cat.includes("prompting")) return output("● Google Prompting Essentials\nStatus: ✓ Completed");
+      return output(`! Unknown google certification: ${cat}`);
+    }
+  },
+  comptia: {
+    name: "comptia",
+    execute: () => output(`
+◆ Security+
+◆ CySA+
+
+Status: ▸ In Progress
+Target completion: 2026
+`)
+  },
+  
   projects: {
     name: "projects",
-    execute: () => stream([
-      "Fetching case files...",
-      "",
-      "[1] Botium Toys Audit",
-      "    → Risk assessment using NIST CSF",
-      "",
-      "[2] Vulnerability Scan",
-      "    → Automated network scanning",
-      "",
-      "[3] Log Parser Tool",
-      "    → Python-based log analysis",
-      "",
-      "Tip: Use 'project 1' to inspect deeper, or 'open projects' to view UI."
-    ], 50)
+    execute: () => output(`
+📁 01 SIEM Detection Lab
+📁 02 Active Directory Lab
+📁 03 SOC Automation
+📁 04 Malware Analysis
+
+▸ Tip: Use 'project <number>' to inspect deeper.
+`)
   },
   project: {
     name: "project",
     execute: (args) => {
-      if (args[1] === "1") return output("Detailed analysis of Botium Toys:\n- Conducted risk assessment\n- Mapped to NIST CSF\n- Identified 5 critical vulnerabilities.");
-      if (args[1] === "2") return output("Vulnerability Scan:\n- Used Nmap for network discovery\n- Documented open ports and services.");
-      if (args[1] === "3") return output("Log Parser Tool:\n- Python script to parse auth logs\n- Extracted failed login attempts.");
-      return output("usage: project <1|2|3>");
-    }
-  },
-  open: {
-    name: "open",
-    execute: (args) => {
-      if (args[1] === "projects") return "__OPEN_PROJECTS__";
-      return output("usage: open projects");
-    }
-  },
-  ls: {
-    name: "ls",
-    execute: () => output("drwxr-xr-x  jothish  staff  bio.txt\ndrwxr-xr-x  jothish  staff  skills.txt\ndrwxr-xr-x  jothish  staff  projects/")
-  },
-  cat: {
-    name: "cat",
-    execute: (args) => {
-      const files: Record<string, string> = {
-        "bio.txt": "I focus on learning systems through real experimentation.",
-        "skills.txt": "Linux, Wireshark, tcpdump, SQL",
-      };
-      if (!args[1]) return output("usage: cat <file>");
-      if (files[args[1]]) return output(files[args[1]]);
-      return output(`cat: ${args[1]}: No such file or directory`);
-    }
-  },
-  whois: {
-    name: "whois",
-    execute: (args) => {
-      if (!args[1]) return output("usage: whois <domain>");
-      return output(`Domain: ${args[1]}\nStatus: Active\nOwner: Public Registry\nUpdated Date: 2026-03-27\nName Server: NS1.JOTHISH.IO`);
-    }
-  },
-  ping: {
-    name: "ping",
-    execute: (args) => {
-      const target = args[1] || "localhost";
-      return stream([
-        `PING ${target} (127.0.0.1) 56(84) bytes of data.`,
-        `64 bytes from 127.0.0.1: icmp_seq=1 ttl=64 time=0.04 ms`,
-        `64 bytes from 127.0.0.1: icmp_seq=2 ttl=64 time=0.05 ms`,
-        `64 bytes from 127.0.0.1: icmp_seq=3 ttl=64 time=0.04 ms`,
-        `--- ${target} ping statistics ---`,
-        `3 packets transmitted, 3 received, 0% packet loss`
-      ], 100);
+      if (!args[1]) return output("usage: project <number>");
+      switch (args[1]) {
+        case "1": return output("● 01 SIEM Detection Lab\nPurpose: Build custom detection rules for malicious behavior.\nTechnologies: Splunk, Elastic, Sysmon.\nGitHub: github.com/jothish-blip/siem-lab\nStatus: ✓ Completed\nOutcome: Created 20+ custom alerts.");
+        case "2": return output("● 02 Active Directory Lab\nPurpose: Understand enterprise network vulnerabilities.\nTechnologies: Windows Server, BloodHound, Mimikatz.\nGitHub: github.com/jothish-blip/ad-lab\nStatus: ✓ Completed\nOutcome: Documented common attack paths.");
+        case "3": return output("● 03 SOC Automation\nPurpose: Automate repetitive SOC tier-1 tasks.\nTechnologies: Python, TheHive, Cortex.\nGitHub: github.com/jothish-blip/soc-auto\nStatus: ▸ Active\nOutcome: Reduced triage time by 40%.");
+        case "4": return output("● 04 Malware Analysis\nPurpose: Analyze live malware samples safely.\nTechnologies: REMnux, Wireshark, Ghidra.\nGitHub: Private\nStatus: ▸ Active\nOutcome: Reverse engineered 3 modern trojans.");
+        default: return output(`! Project ${args[1]} not found.`);
+      }
     }
   },
   
-  // --- NEW POWER COMMANDS ---
-  history: {
-    name: "history",
-    execute: () => output(state.cmdHistory.map((cmd, i) => `  ${i + 1}  ${cmd}`).join("\n") || "No history")
+  experience: {
+    name: "experience",
+    execute: () => output(`
+● Cybersecurity Learner (2024 - Present)
+Focused on self-directed learning, building homelabs, and completing certifications.
+`)
   },
+  education: {
+    name: "education",
+    execute: () => output(`
+● Degree: Self-Taught & Certifications
+● Focus: Cybersecurity, Network Defense, SOC Operations
+`)
+  },
+  
   stats: {
     name: "stats",
     execute: () => output(`
-Session running...
-Commands executed: ${analytics.totalCommands}
-Active mode: ${state.isRoot ? "ROOT" : "USER"}
+● Projects: 12
+● Specializations: 2
+● Courses: 14
+● Certifications: 3
+● Skills: 25+
+● SOC Tools: 10+
+● Learning Hours: 1000+
+● Repositories: 15
+● GitHub Contributions: Active
 `)
   },
-  time: {
-    name: "time",
-    execute: () => output(`Current Time: ${new Date().toLocaleTimeString()}`)
-  },
-  search: {
-    name: "search",
-    execute: (args) => {
-      if (!args[1]) return output("usage: search <keyword>");
-      return output(`Searching for "${args[1]}"...\nNo indexed results yet.`);
+  
+  theme: {
+    name: "theme",
+    execute: () => {
+      if (typeof window !== "undefined") {
+        document.documentElement.classList.toggle("dark");
+      }
+      return output("✓ Theme toggled.");
     }
   },
-  echo: {
-    name: "echo",
-    execute: (args) => output(args.slice(1).join(" "))
+  
+  // EASTER EGGS
+  coffee: {
+    name: "coffee",
+    execute: () => output("! No caffeine detected.\nAnalyst performance unaffected.")
   },
-  learn: {
-    name: "learn",
-    execute: () => stream([
-      "Learning Mode Activated...",
-      "",
-      "Focus:",
-      "- Observing patterns",
-      "- Understanding behavior",
-      "- Building systems",
-      "",
-      "Keep going."
-    ], 60)
+  hack: {
+    name: "hack",
+    execute: () => output("! Access denied.\nUse authorized environments only.")
   },
-  suggest: {
-    name: "suggest",
+  matrix: {
+    name: "matrix",
     execute: () => {
-      const cmds = Object.keys(commands);
-      return output(`Try: ${cmds[Math.floor(Math.random() * cmds.length)]}`);
-    }
-  },
-  system: {
-    name: "system",
-    execute: () => stream([
-      "System Status:",
-      "----------------",
-      "Terminal: Active",
-      "User Mode: " + (state.isRoot ? "Root" : "User"),
-      "Commands Executed: " + analytics.totalCommands,
-      "Status: Operational"
-    ], 50)
-  },
-  analytics: {
-    name: "analytics",
-    execute: () => {
-      const usage = Object.entries(analytics.commandUsage)
-        .map(([cmd, count]) => `  ${cmd}: ${count}`)
-        .join("\n");
-      return output(`
-[ SESSION ANALYTICS ]
----------------------------
-Total Commands: ${analytics.totalCommands}
-Last Command: ${analytics.lastCommand}
-
-Usage Breakdown:
-${usage || "No commands yet"}
----------------------------`);
+      const chars = "0123456789ABCDEF!@#$%^&*";
+      const lines = Array.from({length: 20}, () => 
+        Array.from({length: 60}, () => chars[Math.floor(Math.random() * chars.length)]).join("")
+      );
+      return stream(lines, 20);
     }
   },
 
-  joke: {
-    name: "joke",
-    execute: () => output("Why do cybersecurity researchers always get lost? Because they follow the 'path' but never the breadcrumbs.")
-  },
-  exit: {
-    name: "exit",
-    execute: () => "__EXIT__"
-  },
-  clear: {
-    name: "clear",
-    execute: () => "__CLEAR__"
-  },
+  clear: { name: "clear", execute: () => "__CLEAR__" },
+  exit: { name: "exit", execute: () => "__EXIT__" },
+
   contact: {
     name: "contact",
     execute: () => {
@@ -287,10 +304,38 @@ ${usage || "No commands yet"}
       state.contactSession.data = { name: "", email: "", message: "" };
       return output("Let’s connect.\nTell me your name (or type 'cancel'):");
     }
+  },
+  
+  pwd: {
+    name: "pwd",
+    execute: () => output("/home/jothish/portfolio")
+  },
+  
+  ls: {
+    name: "ls",
+    execute: () => output(`
+drwxr-xr-x  projects/
+drwxr-xr-x  skills/
+drwxr-xr-x  certifications/
+-rw-r--r--  about.txt
+-r-xr-xr-x  resume.pdf
+`)
+  },
+  
+  cat: {
+    name: "cat",
+    execute: (args) => {
+      if (!args[1]) return output("usage: cat <file>");
+      switch(args[1].toLowerCase()) {
+        case "about.txt": return commands.about.execute([]);
+        case "resume.pdf": return commands.resume.execute([]);
+        default: return output(`cat: ${args[1]}: No such file or directory`);
+      }
+    }
   }
 };
 
-export const availableCommands = Object.keys(commands);
+export const availableCommands = Object.keys(commands).concat(["sudo hire jothish"]);
 const aliases: Record<string, string> = { p: "projects", s: "skills", a: "about", c: "contact", h: "help" };
 
 export function handleCommand(input: string): CommandResult {
@@ -305,7 +350,6 @@ export function handleCommand(input: string): CommandResult {
     const session = state.contactSession;
     const lowerInput = fullCommand.toLowerCase();
     
-    // Track analytics even during wizard
     analytics.totalCommands++;
     analytics.lastCommand = "[contact_wizard]";
     
@@ -336,7 +380,7 @@ export function handleCommand(input: string): CommandResult {
           return stream([
             "Sending your message...",
             "Almost there...",
-            "Done.",
+            "✓ Done.",
             "I’ll get back to you soon."
           ], 80);
         }
@@ -350,20 +394,22 @@ export function handleCommand(input: string): CommandResult {
   const rawCmd = args[0].toLowerCase();
   const cmdName = aliases[rawCmd] || rawCmd;
 
-  // Track Analytics
   analytics.totalCommands++;
   analytics.lastCommand = cmdName;
   analytics.commandUsage[cmdName] = (analytics.commandUsage[cmdName] || 0) + 1;
 
-  // Hidden easter egg for sudo
+  if (cmdName === "sudo" && args.join(" ").toLowerCase() === "sudo hire jothish") {
+    state.isRoot = true;
+    return output("✓ Permission granted.\nWelcome aboard.");
+  }
   if (cmdName === "sudo" && args[1] === "su") {
     state.isRoot = true;
-    return output("Escalating privileges... root access granted.");
+    return output("✓ Escalating privileges... root access granted.");
   }
 
   if (commands[cmdName]) {
     return commands[cmdName].execute(args);
   }
 
-  return output(`Unknown command: ${cmdName}.\nTry 'help' or 'suggest'`);
+  return output(`bash: ${rawCmd}: command not found\nType 'help' for available commands.`);
 }
