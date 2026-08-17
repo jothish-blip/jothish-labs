@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useScrollLock } from "@/hooks/useScrollLock";
 
 // --- SYSTEM COLOR & LABEL CONFIG ---
 const sections = ["about", "projects", "skills", "terminal", "contact"];
@@ -56,15 +57,12 @@ export default function Navbar() {
     }
   };
 
-  // Theme & Nav Memory Init
+  // Theme Init
   useEffect(() => {
-    const savedActive = localStorage.getItem("lastSection");
-    if (savedActive) {
-      setNavState((prev) => ({ ...prev, active: savedActive }));
-    }
 
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme === "dark" || savedTheme === "light") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(savedTheme);
       document.documentElement.classList.toggle("dark", savedTheme === "dark");
       return;
@@ -75,23 +73,24 @@ export default function Navbar() {
     document.documentElement.classList.toggle("dark", prefersDark);
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("theme", theme);
-  }, [theme]);
-
   const toggleTheme = () => {
     if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
-    setTheme((current) => (current === "dark" ? "light" : "dark"));
+    
+    // Calculate new theme
+    const newTheme = theme === "dark" ? "light" : "dark";
+    
+    // 1. Update React state
+    setTheme(newTheme);
+    
+    // 2. Update DOM immediately
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+    
+    // 3. Persist to localStorage
+    localStorage.setItem("theme", newTheme);
   };
 
   // Lock background scroll when mobile menu or resume modal is open
-  useEffect(() => {
-    document.body.style.overflow = menuOpen || showResumeOptions ? "hidden" : "auto";
-    return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [menuOpen, showResumeOptions]);
+  useScrollLock(menuOpen || showResumeOptions);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -112,8 +111,6 @@ export default function Navbar() {
           newScrolled = true;
           // IMPORTANT FIX: 400px threshold buffer to prevent scroll flicker
           newHidden = currentScroll > lastScrollY.current && currentScroll > 400;
-        } else {
-          localStorage.removeItem("lastSection");
         }
 
         lastScrollY.current = currentScroll;
@@ -140,9 +137,6 @@ export default function Navbar() {
             prev.hidden !== newHidden ||
             prev.active !== newActive
           ) {
-            if (newActive && prev.active !== newActive) {
-              localStorage.setItem("lastSection", newActive);
-            }
             return {
               progress: newProgress,
               scrolled: newScrolled,
@@ -201,26 +195,29 @@ export default function Navbar() {
     }
   };
 
-  const activeColorVar = active ? sectionConfig[active].cssVar : "var(--accent-skills)";
+  // Base accent on Hero color if no section is active yet
+  const activeColorVar = active ? sectionConfig[active].cssVar : "var(--accent-hero)";
 
   return (
     <>
       {/* Dark / Light Mode Dual Tokens Inline Definition */}
       <style jsx global>{`
         :root {
+          --accent-hero: #6366f1;
           --accent-about: #52525b;
           --accent-projects: #0891b2;
           --accent-skills: #059669;
-          --accent-terminal: #d97706;
+          --accent-terminal: #dc2626; /* Sleek Crimson Red */
           --accent-contact: #2563eb;
           scroll-behavior: smooth;
           scroll-padding-top: 100px;
         }
         html.dark {
+          --accent-hero: #818cf8;
           --accent-about: #a1a1aa;
           --accent-projects: #22d3ee;
           --accent-skills: #34d399;
-          --accent-terminal: #fbbf24;
+          --accent-terminal: #ef4444; /* High-Visibility Hacker Red */
           --accent-contact: #60a5fa;
         }
       `}</style>
@@ -232,26 +229,33 @@ export default function Navbar() {
         before:absolute before:inset-0 before:-z-10 before:transition-all before:duration-700 before:ease-out
         ${
           scrolled
-            ? "py-3 bg-surface-strong backdrop-blur-2xl border-b border-surface shadow-md dark:shadow-[0_4px_20px_rgba(0,0,0,0.6)] before:opacity-[0.08] dark:before:opacity-[0.12]"
+            ? "py-3 bg-background/80 backdrop-blur-2xl border-b border-surface shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] before:opacity-100"
             : "py-6 bg-transparent before:opacity-0"
         }`}
         style={{
           "--nav-gradient": active
-            ? `linear-gradient(to right, transparent, ${activeColorVar}, transparent)`
+            ? `linear-gradient(to right, transparent, color-mix(in srgb, ${activeColorVar} 15%, transparent), transparent)`
             : "transparent",
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...({ "&::before": { background: "var(--nav-gradient)" } } as any),
         }}
       >
-        {/* PREMIUM GLOBAL PROGRESS TRACKER */}
+        {/* PREMIUM GLOBAL PROGRESS TRACKER WITH DOPAMINE GLOW */}
         <div
-          className="absolute top-0 left-0 h-[2px] opacity-80 shadow-[0_0_6px_currentColor] transition-all duration-300 ease-out z-[102]"
-          style={{ width: `${progress}%`, backgroundColor: activeColorVar, color: activeColorVar }}
+          className="absolute top-0 left-0 h-[2px] transition-all duration-300 ease-out z-[102]"
+          style={{ 
+            width: `${progress}%`, 
+            backgroundColor: activeColorVar, 
+            boxShadow: `0 0 10px 1px color-mix(in srgb, ${activeColorVar} 80%, transparent), 0 0 20px 2px color-mix(in srgb, ${activeColorVar} 40%, transparent)` 
+          }}
         />
 
+        {/* PROGRESS PERCENTAGE: Visible on both mobile and desktop when scrolled */}
         <div
-          className={`absolute top-1.5 right-6 text-[9px] text-muted font-mono tracking-widest hidden md:block transition-opacity duration-500 ${
+          className={`absolute top-2 right-4 md:right-6 text-[9px] font-bold font-mono tracking-widest block transition-colors duration-500 ${
             scrolled ? "opacity-100" : "opacity-0"
           }`}
+          style={{ color: activeColorVar }}
         >
           {Math.round(progress)}%
         </div>
@@ -264,26 +268,38 @@ export default function Navbar() {
           >
             <div className="flex items-center gap-2">
               <div
-                className="w-1.5 h-1.5 rounded-full transition-colors duration-500 shadow-[0_0_6px_currentColor]"
-                style={{ backgroundColor: activeColorVar, color: activeColorVar }}
+                className="w-1.5 h-1.5 rounded-full transition-all duration-500 animate-pulse"
+                style={{ 
+                  backgroundColor: activeColorVar, 
+                  boxShadow: `0 0 8px ${activeColorVar}` 
+                }}
               ></div>
               <span className="text-[12px] font-black tracking-[0.2em] text-foreground uppercase group-hover:tracking-[0.25em] transition-all duration-300 ease-out">
                 JOTHISH GANDHAM
               </span>
             </div>
-            <span className="text-[9px] text-muted tracking-widest font-light ml-3.5 uppercase transition-colors duration-300">
-              Status: <span style={{ color: "var(--accent-skills)" }}>Active</span>
+            <span 
+              className="text-[9px] tracking-widest font-light ml-3.5 uppercase transition-colors duration-300"
+              style={{ color: activeColorVar }}
+            >
+              Status: <span className="font-medium">Active</span>
             </span>
           </a>
 
+          {/* ACTIVE SECTION SUB-LABEL: Visible on desktop and mobile when scrolled */}
           <div
-            className="absolute top-full mt-4 left-1/2 -translate-x-1/2 text-[10px] font-mono tracking-widest uppercase opacity-0 md:opacity-100 transition-colors duration-500 ease-out pointer-events-none"
-            style={{ color: active ? sectionConfig[active].cssVar : "var(--muted)" }}
+            className={`absolute top-full mt-2 md:mt-4 left-1/2 -translate-x-1/2 text-[10px] font-mono tracking-widest uppercase transition-all duration-500 ease-out pointer-events-none font-semibold ${
+              scrolled ? "opacity-100" : "opacity-0 md:opacity-100"
+            }`}
+            style={{ 
+              color: activeColorVar,
+              textShadow: `0 0 15px color-mix(in srgb, ${activeColorVar} 50%, transparent)`
+            }}
           >
             {active || "home"}
           </div>
 
-          <div className="hidden md:flex items-center gap-2 bg-surface-strong border border-surface rounded-full px-2 py-1">
+          <div className="hidden md:flex items-center gap-2 bg-background/50 border border-surface rounded-full px-2 py-1 shadow-sm backdrop-blur-md">
             {sections.map((sec, idx) => {
               const isActive = active === sec;
               const cssVar = sectionConfig[sec].cssVar;
@@ -294,17 +310,14 @@ export default function Navbar() {
                   href={`#${sec}`}
                   onClick={(e) => smoothScroll(e, sec)}
                   className={`group relative min-h-[44px] flex items-center px-6 py-2 font-mono text-[11px] tracking-widest uppercase transition-all duration-500 ease-out active:scale-95 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 rounded-full ${
-                    isActive ? "scale-105 font-bold" : "text-muted hover:text-foreground"
+                    isActive ? "scale-105 font-bold" : "text-muted hover:text-foreground hover:bg-surface/30"
                   }`}
-                  style={{ color: isActive ? cssVar : undefined }}
+                  style={{ 
+                    color: isActive ? cssVar : undefined,
+                    backgroundColor: isActive ? `color-mix(in srgb, ${cssVar} 10%, transparent)` : undefined,
+                    border: isActive ? `1px solid color-mix(in srgb, ${cssVar} 20%, transparent)` : '1px solid transparent'
+                  }}
                 >
-                  <div
-                    className={`absolute bottom-2 left-1/2 -translate-x-1/2 h-[1.5px] transition-all duration-300 ease-out opacity-80 ${
-                      isActive ? "w-1/2" : "w-0 group-hover:w-1/2"
-                    }`}
-                    style={{ backgroundColor: isActive ? cssVar : "currentColor" }}
-                  ></div>
-
                   <div className="relative z-10 flex flex-col items-center">
                     <span
                       className={`text-[7px] mb-0.5 transition-colors duration-500 ease-out ${
@@ -316,13 +329,13 @@ export default function Navbar() {
                     <span className="transition-transform duration-500 ease-out">{sec}</span>
                   </div>
 
-                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-75 ease-out pointer-events-none whitespace-nowrap bg-surface-strong text-[9px] px-2 py-1 rounded-sm border border-surface text-muted">
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 delay-75 ease-out pointer-events-none whitespace-nowrap bg-background text-[9px] px-2 py-1 rounded-sm border border-surface text-muted shadow-md">
                     {sectionConfig[sec].label}
                   </div>
 
                   {isActive && (
                     <div
-                      className="absolute inset-0 opacity-15 blur-md rounded-full transition-opacity duration-500"
+                      className="absolute inset-0 opacity-20 blur-md rounded-full transition-opacity duration-500"
                       style={{ backgroundColor: cssVar }}
                     ></div>
                   )}
@@ -338,8 +351,12 @@ export default function Navbar() {
                 if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
                 setShowResumeOptions(true);
               }}
-              className="hidden md:flex items-center gap-2 px-5 py-2 border rounded-full font-mono text-[11px] tracking-widest uppercase transition-all duration-300 hover:bg-current/10 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500/30"
-              style={{ borderColor: activeColorVar, color: activeColorVar }}
+              className="hidden md:flex items-center gap-2 px-5 py-2 border rounded-full font-mono text-[11px] tracking-widest uppercase transition-all duration-300 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-500/30 shadow-sm"
+              style={{ 
+                borderColor: `color-mix(in srgb, ${activeColorVar} 30%, transparent)`, 
+                color: activeColorVar,
+                backgroundColor: `color-mix(in srgb, ${activeColorVar} 5%, transparent)`
+              }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -355,24 +372,30 @@ export default function Navbar() {
               type="button"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-              className="flex items-center justify-center w-11 h-11 rounded-full border border-surface bg-surface text-muted transition-all duration-300 hover:bg-surface-strong focus:outline-none focus:ring-2 focus:ring-cyan-500/30 active:scale-95"
+              className="flex items-center justify-center w-11 h-11 rounded-full border border-surface bg-background shadow-sm text-muted transition-all duration-300 hover:text-foreground focus:outline-none focus:ring-2 focus:ring-cyan-500/30 active:scale-95"
+              style={{
+                borderColor: `color-mix(in srgb, ${activeColorVar} 20%, transparent)`,
+              }}
             >
               {theme === "dark" ? (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                   <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364l-1.414 1.414M7.05 16.95l-1.414 1.414M18.364 18.364l-1.414-1.414M7.05 7.05L5.636 5.636" />
                   <circle cx="12" cy="12" r="5" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
                   <path d="M21 12.79A9 9 0 1111.21 3a7 7 0 109.79 9.79z" />
                 </svg>
               )}
             </button>
 
             <button
-              className={`md:hidden flex items-center justify-center p-2.5 group bg-surface rounded-sm border border-surface transition-opacity duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 ${
+              className={`md:hidden flex items-center justify-center p-2.5 group bg-background rounded-sm border transition-all duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 ${
                 menuOpen ? "opacity-0 pointer-events-none" : "opacity-100 active:scale-95"
               }`}
+              style={{
+                borderColor: `color-mix(in srgb, ${activeColorVar} 30%, transparent)`,
+              }}
               onClick={() => {
                 if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
                 setMenuOpen(true);
@@ -382,11 +405,11 @@ export default function Navbar() {
               <svg 
                 viewBox="0 0 24 24" 
                 fill="none" 
-                stroke="currentColor" 
+                stroke={activeColorVar} 
                 strokeWidth="2" 
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
-                className="w-6 h-6 text-slate-800 dark:text-slate-200"
+                className="w-5 h-5 transition-colors"
               >
                 <line x1="4" y1="6" x2="20" y2="6"></line>
                 <line x1="4" y1="12" x2="20" y2="12"></line>
@@ -398,42 +421,29 @@ export default function Navbar() {
 
         {/* --- FIXED OVERLAY SECTION --- */}
         <div
-          className={`fixed inset-0 w-full h-[100dvh] bg-white dark:bg-zinc-950 transition-all duration-500 ease-out md:hidden z-[110] ${
+          className={`fixed inset-0 w-full h-[100dvh] bg-background/95 backdrop-blur-md transition-all duration-500 ease-out md:hidden z-[110] ${
             menuOpen ? "translate-y-0 opacity-100 pointer-events-auto" : "-translate-y-full opacity-0 pointer-events-none"
           }`}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
         >
-          {/* FIX 2: Moved close button up to top-4 right-4 and slightly adjusted padding for tighter look */}
           <button
             onClick={() => setMenuOpen(false)}
-            className="absolute top-4 right-4 p-2.5 bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-md text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-all active:scale-95 focus:outline-none focus:ring-1 focus:ring-cyan-500/30 z-[115]"
+            className="absolute top-4 right-4 p-2.5 bg-surface/30 border border-surface rounded-md text-foreground hover:bg-surface transition-all active:scale-95 focus:outline-none z-[115]"
             aria-label="Close Menu"
           >
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="w-6 h-6"
-            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </button>
 
-          {/* FIX 3: Adjusted pt-24 to pt-20 to pull the inner content up since the close button moved higher */}
           <div className="flex flex-col p-6 pt-20 h-full overflow-y-auto">
-            <div className="mb-8 border-b border-slate-200 dark:border-zinc-800 pb-6 flex justify-between items-end">
+            <div className="mb-8 border-b border-surface pb-6 flex justify-between items-end">
               <div>
-                <p className="font-mono text-[10px] tracking-[0.5em] uppercase mb-2" style={{ color: "var(--accent-projects)" }}>
-                  // Navigation
-                </p>
-                <h3 className="text-xs font-mono text-slate-500 dark:text-slate-400 uppercase tracking-widest">Menu</h3>
+                <h3 className="text-[10px] font-mono text-muted uppercase tracking-[0.24em]">Navigation</h3>
               </div>
-              <div className="text-[9px] text-slate-500 dark:text-slate-400 font-mono tracking-widest text-right">
+              <div className="text-[9px] text-muted font-mono tracking-[0.24em] text-right uppercase">
                 Swipe down or
                 <br />
                 right to close
@@ -450,51 +460,47 @@ export default function Navbar() {
                     key={sec}
                     href={`#${sec}`}
                     onClick={(e) => smoothScroll(e, sec)}
-                    className={`group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 p-2 rounded-sm ${
-                      isActive ? "text-slate-900 dark:text-slate-50" : "text-slate-500 dark:text-slate-400"
+                    className={`group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none p-2 rounded-sm ${
+                      isActive ? "text-foreground" : "text-muted"
                     }`}
                     style={{ color: isActive ? cssVar : undefined }}
                   >
                     <span className="font-mono text-xs transition-colors duration-500 ease-out">0{idx + 1}</span>
-                    <span className="text-3xl sm:text-4xl font-black tracking-tighter uppercase transition-all duration-500 ease-out hover:opacity-80">
+                    <span className="text-3xl sm:text-4xl font-semibold tracking-tight uppercase transition-all duration-500 ease-out hover:opacity-80">
                       {sec}
                     </span>
                   </a>
                 );
               })}
 
-              <div className="w-full h-px bg-slate-200 dark:bg-zinc-800 my-1" />
+              <div className="w-full h-px bg-surface my-1" />
 
-              {/* Mobile Menu Resume Option */}
               <button
                 onClick={() => {
                   if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10);
                   setMenuOpen(false);
                   setShowResumeOptions(true);
                 }}
-                className="group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none focus:ring-1 focus:ring-cyan-500/30 p-2 rounded-sm text-slate-500 dark:text-slate-400 w-full text-left"
+                className="group flex items-center gap-6 active:scale-95 transition-all duration-300 ease-out focus:outline-none p-2 rounded-sm text-muted w-full text-left"
               >
-                <span className="font-mono text-xs transition-colors duration-500 ease-out">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                  </svg>
+                <span className="font-mono text-[10px] transition-colors duration-500 ease-out uppercase tracking-widest">
+                  RS
                 </span>
-                <span className="text-3xl sm:text-4xl font-black tracking-tighter uppercase transition-all duration-500 ease-out hover:opacity-80 text-slate-900 dark:text-slate-50">
+                <span className="text-3xl sm:text-4xl font-semibold tracking-tight uppercase transition-all duration-500 ease-out hover:opacity-80 text-foreground">
                   Resume
                 </span>
               </button>
             </div>
 
-            <div className="mt-auto pt-10 border-t border-slate-200 dark:border-zinc-800 font-mono text-[9px] text-slate-500 dark:text-slate-400 flex justify-between items-center uppercase tracking-widest">
+            <div className="mt-auto pt-10 border-t border-surface font-mono text-[9px] text-muted flex justify-between items-center uppercase tracking-[0.24em]">
               <span className="flex items-center gap-2">
                 <div
                   className="w-1.5 h-1.5 rounded-full shadow-[0_0_6px_currentColor]"
-                  style={{ backgroundColor: "var(--accent-skills)", color: "var(--accent-skills)" }}
+                  style={{ backgroundColor: activeColorVar, color: activeColorVar }}
                 ></div>
                 System_Online
               </span>
-              <span>JOTHISH GANDHAM</span>
+              <span>Jothish Gandham</span>
             </div>
           </div>
         </div>
@@ -502,24 +508,24 @@ export default function Navbar() {
 
       {/* MODAL UI (Shared for Desktop and Mobile) */}
       {showResumeOptions && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowResumeOptions(false)}>
-          <div className="bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-sm p-6 w-[300px] space-y-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-sm font-mono uppercase tracking-widest text-slate-500 dark:text-slate-400 text-center pb-2">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-background/80 backdrop-blur-md" onClick={() => setShowResumeOptions(false)}>
+          <div className="bg-background border border-surface rounded-md p-6 w-[320px] space-y-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[10px] font-mono uppercase tracking-[0.24em] text-muted text-center pb-3 border-b border-surface">
               Resume Options
             </h3>
             
             <a
               href="/Resume"
-              className="block w-full text-center px-4 py-3 border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-900 dark:text-slate-50 text-xs font-mono uppercase tracking-widest transition-colors"
+              className="block w-full text-center px-4 py-3.5 border border-surface bg-surface/20 hover:bg-surface text-foreground text-[10px] font-mono uppercase tracking-[0.24em] transition-all rounded-sm"
               onClick={() => setShowResumeOptions(false)}
             >
               View Resume (Web)
             </a>
 
             <a
-              href="/Resume.pdf"
+              href="/Jothish_Gandham_Cybersecurity_Resume.pdf"
               download
-              className="block w-full text-center px-4 py-3 border border-slate-200 dark:border-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-900 text-slate-900 dark:text-slate-50 text-xs font-mono uppercase tracking-widest transition-colors"
+              className="block w-full text-center px-4 py-3.5 border border-surface bg-surface/20 hover:bg-surface text-foreground text-[10px] font-mono uppercase tracking-[0.24em] transition-all rounded-sm"
               onClick={() => setShowResumeOptions(false)}
             >
               Download Resume (PDF)
@@ -527,7 +533,7 @@ export default function Navbar() {
 
             <button
               onClick={() => setShowResumeOptions(false)}
-              className="text-[10px] font-mono tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-50 uppercase w-full mt-2 transition-colors"
+              className="text-[9px] font-mono tracking-[0.24em] text-muted hover:text-foreground uppercase w-full mt-4 transition-colors pt-2"
             >
               Cancel
             </button>
@@ -535,32 +541,33 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* NEW SIDEBAR NAVIGATION: Progress Line + Nodes + Hover Expansion */}
-      {/* Hidden on Mobile (md:flex ensures desktop only) */}
+      {/* SIDEBAR NAVIGATION: Progress Line + Nodes + Centered Labels */}
       <aside
-        className={`fixed left-4 top-1/2 -translate-y-1/2 z-[105] hidden md:flex flex-col items-start transition-all duration-500 group/sidebar ${
+        className={`fixed left-4 lg:left-6 top-1/2 -translate-y-1/2 z-[105] hidden md:flex flex-col items-start transition-all duration-500 group/sidebar ${
           hidden ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-6 pointer-events-none"
         }`}
       >
-        {/* Scroll Percentage Element */}
         <div
-          className="text-[9px] font-mono tracking-widest text-muted mb-4 ml-[2px] transition-colors duration-300"
-          style={{ color: activeColorVar }}
+          className="w-4 flex justify-center text-[9px] font-mono font-bold tracking-[0.24em] mb-5 transition-colors duration-300 overflow-visible whitespace-nowrap"
+          style={{ 
+            color: activeColorVar,
+            textShadow: `0 0 10px color-mix(in srgb, ${activeColorVar} 50%, transparent)`
+          }}
         >
           {Math.round(progress)}%
         </div>
 
-        <div className="relative flex flex-col gap-6 py-2 ml-1">
+        <div className="relative flex flex-col gap-8 py-2 ml-[7px]">
           {/* Faded Background Track */}
-          <div className="absolute left-[5px] top-0 bottom-0 w-[2px] bg-surface-strong/50 z-0"></div>
+          <div className="absolute left-[0.5px] top-0 bottom-0 w-[1px] bg-surface-strong/50 z-0"></div>
 
-          {/* Active Vertical Progress Line */}
+          {/* Active Vertical Progress Line with Dopamine Glow */}
           <div
-            className="absolute left-[5px] top-0 w-[2px] transition-all duration-300 z-0 shadow-[0_0_8px_currentColor]"
+            className="absolute left-[0.5px] top-0 w-[1px] transition-all duration-300 z-0"
             style={{
               height: `${progress}%`,
               backgroundColor: activeColorVar,
-              color: activeColorVar,
+              boxShadow: `0 0 8px ${activeColorVar}`
             }}
           ></div>
 
@@ -574,25 +581,25 @@ export default function Navbar() {
                 key={sec}
                 href={`#${sec}`}
                 onClick={(e) => smoothScroll(e, sec)}
-                className="group/node flex items-center relative z-10 focus:outline-none"
+                className="group/node flex items-center relative z-10 focus:outline-none h-4"
                 aria-label={`Scroll to ${sec}`}
               >
-                {/* Node Target */}
+                {/* Node Target Circle */}
                 <div
-                  className={`w-3 h-3 rounded-full border-[1.5px] border-surface transition-all duration-300 ${
-                    isActive ? "scale-125" : "opacity-40 group-hover/node:opacity-100"
+                  className={`w-3 h-3 -ml-[5px] rounded-full border transition-all duration-300 shrink-0 bg-background ${
+                    isActive ? "scale-125 border-[1.5px]" : "border-surface opacity-60 group-hover/node:opacity-100 group-hover/node:scale-110"
                   }`}
-                  style={{
-                    backgroundColor: cssVar,
-                    boxShadow: isActive ? `0 0 8px ${cssVar}` : "none",
-                  }}
+                  style={isActive ? {
+                    borderColor: cssVar,
+                    boxShadow: `0 0 10px color-mix(in srgb, ${cssVar} 50%, transparent)`
+                  } : {}}
                 />
 
-                {/* Expanding Label Container (Mini to Full) */}
-                <div className="flex items-center ml-4 cursor-pointer">
+                {/* Vertical-Centered Label Container */}
+                <div className="flex items-center ml-4 cursor-pointer leading-none">
                   {/* Always-visible Mini Label */}
                   <span
-                    className={`text-[9px] font-mono transition-colors duration-300 ${
+                    className={`text-[9px] font-mono leading-none transition-colors duration-300 ${
                       isActive ? "font-bold" : "text-muted"
                     }`}
                     style={{ color: isActive ? cssVar : undefined }}
@@ -601,9 +608,9 @@ export default function Navbar() {
                   </span>
 
                   {/* Full Text Expanding on Hover */}
-                  <div className="overflow-hidden transition-all duration-300 ease-out max-w-0 opacity-0 group-hover/sidebar:max-w-[100px] group-hover/sidebar:opacity-100">
+                  <div className="overflow-hidden transition-all duration-300 ease-out max-w-0 opacity-0 group-hover/sidebar:max-w-[120px] group-hover/sidebar:opacity-100 flex items-center">
                     <span
-                      className="pl-2 text-[10px] font-mono uppercase tracking-widest whitespace-nowrap"
+                      className="pl-3 text-[9px] font-mono leading-none uppercase tracking-[0.24em] whitespace-nowrap"
                       style={{ color: isActive ? cssVar : "var(--muted)" }}
                     >
                       {sec}

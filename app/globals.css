@@ -110,21 +110,45 @@ body::before {
   border-color: var(--border);
 }
 
-/* ===== TEXT SELECTION ===== */
+/* ===== DYNAMIC SECTION-AWARE TEXT SELECTION ===== */
+
+/* Global Default (Hero Section) */
 ::selection {
-  background: var(--selection-bg);
+  background: color-mix(in srgb, var(--accent-hero, #6366f1) 30%, transparent);
   color: inherit;
 }
 
-h1::selection,
-h2::selection,
-h3::selection {
-  background: rgba(34, 211, 238, 0.4);
+/* About Section */
+#about *::selection {
+  background: color-mix(in srgb, var(--accent-about) 30%, transparent);
 }
 
+/* Projects Section */
+#projects *::selection {
+  background: color-mix(in srgb, var(--accent-projects) 30%, transparent);
+}
+
+/* Skills Section */
+#skills *::selection {
+  background: color-mix(in srgb, var(--accent-skills) 30%, transparent);
+}
+
+/* Terminal Section */
+#terminal *::selection {
+  background: color-mix(in srgb, var(--accent-terminal) 30%, transparent);
+}
+
+/* Contact Section */
+#contact *::selection {
+  background: color-mix(in srgb, var(--accent-contact) 30%, transparent);
+}
+
+/* Code & Pre Blocks (Always uses Terminal Accent for hacker vibe) */
 code::selection,
-pre::selection {
-  background: rgba(250, 204, 21, 0.3);
+pre::selection,
+code *::selection,
+pre *::selection {
+  background: color-mix(in srgb, var(--accent-terminal) 40%, transparent);
 }
 
 /* ===== ANIMATIONS ===== */

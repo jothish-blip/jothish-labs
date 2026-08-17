@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
+import { ExternalLink, ChevronDown } from "lucide-react";
 
 export default function IdentitySection() {
   const [showResumeOptions, setShowResumeOptions] = useState(false);
@@ -22,66 +22,93 @@ export default function IdentitySection() {
   }, []);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 items-start max-w-6xl mx-auto px-4 md:px-0">
       
+      {/* Local Styles for dynamic accent hovers */}
+      <style>{`
+        .identity-btn:hover {
+          color: var(--accent-about) !important;
+          border-color: color-mix(in srgb, var(--accent-about) 40%, transparent) !important;
+          background-color: color-mix(in srgb, var(--accent-about) 10%, transparent) !important;
+        }
+        .identity-link:hover {
+          color: var(--accent-about) !important;
+          background-color: color-mix(in srgb, var(--accent-about) 10%, transparent) !important;
+        }
+      `}</style>
+
       {/* LEFT: TEXT DATA */}
       <div className="lg:col-span-5 space-y-10 order-2 lg:order-1">
         <div className="space-y-4">
-          <div className="font-mono text-[10px] text-[var(--accent)] tracking-[0.4em] uppercase">
-            IDENTITY
+          <div 
+            className="font-mono text-[9px] tracking-[0.24em] uppercase"
+            style={{ color: 'var(--accent-about)' }}
+          >
+            {"// Identity"}
           </div>
-          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tighter uppercase leading-[0.85]">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight uppercase leading-[0.9] text-foreground">
             Jothish <span className="text-muted italic font-light">Gandham</span>
           </h2>
-          <div className="font-mono text-xs text-muted tracking-tight border-y border-surface py-3 flex items-center justify-between">
+          <div className="font-mono text-[10px] text-muted tracking-wide border-y border-surface py-3 flex items-center justify-between">
             <span>
-              Security Learner | <span className="text-[var(--accent)] font-bold">Blue Team • SOC • Hands-on Projects</span>
+              Security Learner | <span className="font-medium" style={{ color: 'var(--accent-about)' }}>Blue Team • SOC • Labs</span>
             </span>
           </div>
         </div>
         
-        <div className="border-l border-surface pl-10 space-y-6">
-          <p className="text-muted text-sm leading-relaxed">
+        <div className="border-l border-surface pl-8 lg:pl-10 space-y-6">
+          <p className="text-[13px] text-muted leading-relaxed">
             I enjoy understanding how systems behave instead of memorizing concepts. That curiosity led me into networking, operating systems, and defensive security.
           </p>
-          <div className="w-12 h-px bg-surface"></div>
-          <p className="text-muted text-sm leading-relaxed">
-            Today I spend most of my time building projects, experimenting with tools like Linux, Wireshark and Splunk, and documenting what I learn.
+          <div className="w-8 h-px bg-surface"></div>
+          <p className="text-[13px] text-muted leading-relaxed">
+            Today I spend most of my time building projects, experimenting with tools like Linux, Wireshark, and Splunk, and documenting what I learn.
           </p>
-          <p className="text-muted text-sm leading-relaxed">
+          <p className="text-[13px] text-muted leading-relaxed">
             My goal is simple: build practical skills first, then contribute as a SOC analyst.
           </p>
 
-          <div className="flex flex-wrap gap-3 pt-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             {["Linux", "Networking", "Threat Detection", "SOC Learning"].map((trait) => (
-              <span key={trait} className="group text-[9px] font-mono px-3 py-1 bg-surface border border-surface text-muted uppercase tracking-widest cursor-default transition-colors hover:text-foreground hover:border-[var(--accent)]">
+              <span key={trait} className="text-[9px] font-mono px-2 py-1 bg-surface/20 border border-surface text-muted uppercase tracking-[0.24em] cursor-default transition-colors hover:bg-background hover:text-foreground">
                 {trait}
               </span>
             ))}
           </div>
 
-          <div className="flex flex-wrap items-center gap-4 pt-6">
-            <a href="https://github.com/jothish-blip" target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-surface rounded-sm font-mono text-[10px] text-muted hover:text-[var(--accent)] hover:border-[var(--accent)] hover:bg-surface transition-all uppercase tracking-widest flex items-center gap-1.5">
-              GitHub ↗
+          <div className="flex flex-wrap items-center gap-3 pt-6">
+            <a 
+              href="https://github.com/jothish-blip" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="identity-btn px-4 py-2.5 border border-surface rounded-sm font-mono text-[9px] text-muted hover:border-surface-strong transition-all uppercase tracking-[0.24em] flex items-center gap-1.5"
+            >
+              GitHub <ExternalLink size={10} />
             </a>
-            <a href="https://www.linkedin.com/in/jothish-gandham-5b90b334a/" target="_blank" rel="noopener noreferrer" className="px-4 py-2 border border-surface rounded-sm font-mono text-[10px] text-muted hover:text-[var(--accent)] hover:border-[var(--accent)] hover:bg-surface transition-all uppercase tracking-widest flex items-center gap-1.5">
-              LinkedIn ↗
+            <a 
+              href="https://www.linkedin.com/in/jothish-gandham-5b90b334a/" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="identity-btn px-4 py-2.5 border border-surface rounded-sm font-mono text-[9px] text-muted hover:border-surface-strong transition-all uppercase tracking-[0.24em] flex items-center gap-1.5"
+            >
+              LinkedIn <ExternalLink size={10} />
             </a>
             
             {/* FLOATING DROPDOWN MENU */}
             <div ref={dropdownRef} className="relative">
               <button
                 onClick={() => setShowResumeOptions((prev) => !prev)}
-                className="px-4 py-2 border border-surface rounded-sm font-mono text-[10px] text-foreground hover:text-[var(--accent)] hover:border-[var(--accent)] hover:bg-surface transition-all uppercase tracking-widest flex items-center gap-1.5"
+                className="px-4 py-2.5 border border-surface rounded-sm font-mono text-[9px] hover:opacity-80 transition-all uppercase tracking-[0.24em] flex items-center gap-1.5"
+                style={{ color: 'var(--accent-about)' }}
               >
-                Resume ▼
+                Resume <ChevronDown size={12} className={`transition-transform duration-300 ${showResumeOptions ? "rotate-180" : ""}`} />
               </button>
 
               {showResumeOptions && (
-                <div className="absolute top-full mt-2 left-0 w-[200px] border border-surface bg-background backdrop-blur-md shadow-lg z-50 rounded-sm overflow-hidden">
+                <div className="absolute top-full mt-2 left-0 w-[180px] border border-surface bg-background/95 backdrop-blur-sm shadow-xl z-50 rounded-sm overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
                   <a
                     href="/Resume"
-                    className="block px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-muted hover:text-[var(--accent)] hover:bg-surface transition"
+                    className="identity-link block px-4 py-3 text-[9px] font-mono uppercase tracking-[0.24em] text-muted transition-colors"
                     onClick={() => setShowResumeOptions(false)}
                   >
                     View Resume
@@ -89,7 +116,7 @@ export default function IdentitySection() {
                   <a
                     href="/Resume.pdf"
                     download
-                    className="block px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-muted hover:text-[var(--accent)] hover:bg-surface transition border-t border-surface"
+                    className="identity-link block px-4 py-3 text-[9px] font-mono uppercase tracking-[0.24em] text-muted transition-colors border-t border-surface"
                     onClick={() => setShowResumeOptions(false)}
                   >
                     Download PDF
@@ -103,94 +130,101 @@ export default function IdentitySection() {
       </div>
 
       {/* CENTER: PROFILE PHOTO */}
-      <div className="lg:col-span-3 order-1 lg:order-2">
-        <div className="relative group max-w-[280px] mx-auto lg:mx-0">
-            <div className="absolute -inset-2 border border-[var(--accent-soft)] opacity-50 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-            <div className="relative border border-surface p-2 bg-surface-strong backdrop-blur-sm overflow-hidden rounded-sm">
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-[var(--accent)] opacity-30 animate-scan z-10 pointer-events-none"></div>
+      <div className="lg:col-span-3 order-1 lg:order-2 flex flex-col items-center lg:items-start pt-2">
+        <div className="relative group w-full max-w-[260px] mx-auto lg:mx-0">
+            <div className="relative border border-surface p-2 bg-surface/10 rounded-md overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                     src="/images/profile.jpeg"
                     alt="Jothish Gandham"
-                    className="w-full h-auto object-cover md:grayscale md:brightness-75 md:group-hover:grayscale-0 md:group-hover:brightness-100 transition-all duration-700 ease-in-out border border-surface"
+                    className="w-full h-auto object-cover border border-surface rounded-sm transition-all duration-700 ease-in-out grayscale-0 opacity-100 lg:grayscale lg:opacity-80 group-hover:grayscale-0 group-hover:opacity-100"
                 />
             </div>
-            <div className="mt-3 flex justify-between items-center px-1 font-mono text-[9px] text-muted uppercase tracking-[0.2em]">
+            <div className="mt-4 flex justify-between items-center px-1 font-mono text-[8px] text-muted uppercase tracking-[0.24em]">
                 <span>Identity Record</span>
-                <span className="text-[var(--accent)]">Verified</span>
+                <span className="flex items-center gap-1.5" style={{ color: 'var(--accent-about)' }}>
+                  <span className="h-1 w-1 rounded-full" style={{ backgroundColor: 'var(--accent-about)' }}></span>
+                  Verified
+                </span>
             </div>
         </div>
       </div>
 
       {/* RIGHT: EDUCATION, FOCUS & STATUS */}
-      <div className="lg:col-span-4 space-y-10 order-3 border-l border-surface pl-6 lg:pl-10">
+      <div className="lg:col-span-4 space-y-10 order-3 lg:border-l border-surface pt-8 lg:pt-0 lg:pl-10">
         
         {/* Education & Timeline */}
         <div className="space-y-6">
-            <h4 className="font-mono text-[10px] text-[var(--accent)] uppercase tracking-[0.4em]">EDUCATION</h4>
+            <h4 
+              className="font-mono text-[9px] uppercase tracking-[0.24em]"
+              style={{ color: 'var(--accent-about)' }}
+            >
+              {"// Education"}
+            </h4>
             
-            <div className="space-y-3 font-mono text-[11px]">
-                <div className="relative p-3 border border-transparent rounded-sm hover:border-[var(--accent)] hover:bg-surface transition-all duration-300">
-                    <span className="absolute -left-[35px] lg:-left-[47px] top-1/2 -translate-y-1/2 w-2 h-2 bg-[var(--accent)] rounded-full"></span>
-                    <p className="text-foreground font-bold leading-tight flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            <div className="space-y-2">
+                <div className="relative p-4 border border-transparent rounded-md hover:border-surface hover:bg-surface/10 transition-all duration-300">
+                    <span 
+                      className="hidden lg:block absolute -left-[45px] top-[26px] w-1.5 h-1.5 rounded-full"
+                      style={{ backgroundColor: 'var(--accent-about)' }}
+                    ></span>
+                    <p className="text-[13px] text-foreground font-medium leading-tight mb-1">
                       B.Tech CSE (Cyber Security)
                     </p>
-                    <p className="text-muted mt-1">Sandip University, Nashik</p>
-                    <p className="text-muted text-[10px] mt-1">2024 — 2028</p>
+                    <p className="text-[11px] text-muted">Sandip University, Nashik</p>
+                    <p className="text-[9px] font-mono uppercase tracking-[0.24em] text-muted/60 mt-3">2024 — 2028</p>
                 </div>
                 
                 {/* Mini Timeline */}
-                <div className="ml-4 pl-4 border-l border-surface text-[9px] font-mono text-muted uppercase tracking-widest space-y-2 py-2">
-                    <div className="text-[var(--accent)] font-bold">2026</div>
-                    <div>Started Cyber Security</div>
-                    <div className="opacity-40">↓</div>
-                    <div>Networking</div>
-                    <div className="opacity-40">↓</div>
-                    <div>Linux</div>
-                    <div className="opacity-40">↓</div>
-                    <div>Projects</div>
-                    <div className="opacity-40">↓</div>
-                    <div>SOC Learning</div>
+                <div className="ml-4 pl-4 border-l border-surface text-[8px] font-mono text-muted uppercase tracking-[0.24em] space-y-3 py-3">
+                    <div style={{ color: 'var(--accent-about)' }}>2026</div>
+                    <div className="flex items-center gap-2"><span className="h-[1px] w-2 bg-surface"></span> Started Cyber Security</div>
+                    <div className="flex items-center gap-2"><span className="h-[1px] w-2 bg-surface"></span> Networking</div>
+                    <div className="flex items-center gap-2"><span className="h-[1px] w-2 bg-surface"></span> Linux</div>
+                    <div className="flex items-center gap-2"><span className="h-[1px] w-2 bg-surface"></span> Projects</div>
+                    <div className="flex items-center gap-2"><span className="h-[1px] w-2 bg-surface"></span> SOC Learning</div>
                 </div>
 
-                <div className="relative p-3 border border-transparent rounded-sm hover:border-surface hover:bg-surface transition-all duration-300 opacity-70">
-                    <span className="absolute -left-[35px] lg:-left-[47px] top-1/2 -translate-y-1/2 w-2 h-2 bg-surface-strong border border-surface rounded-full"></span>
-                    <p className="text-foreground font-bold leading-tight flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2ZM8 7h6M8 11h8"/></svg>
+                <div className="relative p-4 border border-transparent rounded-md hover:border-surface hover:bg-surface/10 transition-all duration-300 opacity-70">
+                    <span className="hidden lg:block absolute -left-[45px] top-[26px] w-1.5 h-1.5 bg-surface-strong rounded-full"></span>
+                    <p className="text-[13px] text-foreground font-medium leading-tight mb-1">
                       Intermediate (MPC)
                     </p>
-                    <p className="text-muted mt-1">Narayana Junior College, Vijayawada</p>
-                    <p className="text-muted text-[10px] mt-1">2022 — 2024</p>
+                    <p className="text-[11px] text-muted">Narayana Junior College, Vijayawada</p>
+                    <p className="text-[9px] font-mono uppercase tracking-[0.24em] text-muted/60 mt-3">2022 — 2024</p>
                 </div>
             </div>
         </div>
 
         {/* Current Focus */}
-        <div className="space-y-4 border-t border-surface pt-8">
-            <h4 className="font-mono text-[10px] text-muted uppercase tracking-[0.4em]">CURRENT FOCUS</h4>
-            <ul className="grid grid-cols-2 gap-y-3 gap-x-2 font-mono text-[10px] text-muted tracking-widest uppercase">
-              <li className="flex items-center gap-2"><span className="text-[var(--accent)]">•</span> SOC Learning</li>
-              <li className="flex items-center gap-2"><span className="text-[var(--accent)]">•</span> Linux</li>
-              <li className="flex items-center gap-2"><span className="text-[var(--accent)]">•</span> Network Analysis</li>
-              <li className="flex items-center gap-2"><span className="text-[var(--accent)]">•</span> Splunk</li>
-              <li className="flex items-center gap-2"><span className="text-[var(--accent)]">•</span> Project Dev</li>
-              <li className="flex items-center gap-2"><span className="text-[var(--accent)]">•</span> Documentation</li>
+        <div className="space-y-5 border-t border-surface pt-8">
+            <h4 className="font-mono text-[9px] text-muted uppercase tracking-[0.24em]">
+              Current Focus
+            </h4>
+            <ul className="grid grid-cols-2 gap-y-3 gap-x-2 font-mono text-[9px] text-muted tracking-[0.24em] uppercase">
+              {["SOC Learning", "Linux", "Network Analysis", "Splunk", "Project Dev", "Documentation"].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <span className="h-1 w-1 bg-surface-strong rounded-full"></span> {item}
+                </li>
+              ))}
             </ul>
         </div>
         
         {/* Status Card */}
-        <div className="p-5 bg-surface border border-surface rounded-sm space-y-4">
-            <p className="text-[10px] font-mono text-muted uppercase tracking-widest">CURRENT STATUS</p>
-            <p className="text-[11px] font-mono text-[var(--accent)] uppercase tracking-widest font-bold flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+        <div className="p-5 bg-background border border-surface rounded-md space-y-5">
+            <p className="text-[9px] font-mono text-muted uppercase tracking-[0.24em]">
+              Current Status
+            </p>
+            <p className="text-[11px] font-mono text-foreground uppercase tracking-[0.24em] flex items-center gap-2.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                 Open to Opportunities
             </p>
-            <div className="flex flex-col gap-2 font-mono text-[10px] text-muted pt-2 border-t border-surface/50">
-              <div className="flex justify-between">
+            <div className="flex flex-col gap-3 font-mono text-[9px] uppercase tracking-[0.24em] text-muted pt-4 border-t border-surface/50">
+              <div className="flex justify-between items-center">
                 <span>Location:</span>
                 <span className="text-foreground">India</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span>Availability:</span>
                 <span className="text-foreground">Immediate</span>
               </div>
