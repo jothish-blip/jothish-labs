@@ -14,6 +14,7 @@ import {
   Briefcase,
   GraduationCap
 } from "lucide-react";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 // Custom SVGs to bypass lucide-react brand export errors
 const GithubIcon = ({ className, size = 24 }: { className?: string, size?: number }) => (
@@ -68,6 +69,11 @@ export default function ResumePage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true);
+    
+    // Track RESUME_VIEW
+    trackEvent({
+      type: TELEMETRY_EVENTS.RESUME_VIEW
+    });
   }, []);
 
   return (
@@ -121,8 +127,9 @@ export default function ResumePage() {
           </Suspense>
 
           <a 
-            href="/Jothish_Gandham_Cybersecurity_Resume_Optimized.pdf" 
+            href="/Jothish_Gandham_Cybersecurity_Resume.pdf" 
             download 
+            onClick={() => trackEvent({ type: TELEMETRY_EVENTS.RESUME_DOWNLOAD })}
             aria-label="Download Jothish Gandham Cybersecurity Resume as PDF"
             className="flex items-center justify-center gap-2 px-6 py-3 border rounded-sm text-[10px] font-mono uppercase tracking-[0.24em] transition-all duration-300 w-fit"
             style={{ 

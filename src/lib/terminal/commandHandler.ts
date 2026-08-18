@@ -73,6 +73,7 @@ Utilities
   theme           Toggle system theme
   banner          Display terminal banner
   stats           View system statistics
+  ops             Open operational tools
 `)
   },
   banner: {
@@ -115,6 +116,10 @@ Type "help" to begin.
   resume: {
     name: "resume",
     execute: () => "__OPEN_RESUME__"
+  },
+  ops: {
+    name: "ops",
+    execute: () => "__OPEN_OPS__"
   },
   social: {
     name: "social",

@@ -5,6 +5,7 @@ import { ProjectData, ChildProjectData } from "@/lib/projects/types";
 import { X, ArrowLeft, ExternalLink, ArrowRight, ShieldAlert, Code2 } from "lucide-react";
 import Image from "next/image";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 interface Props {
   project: ProjectData;
@@ -18,6 +19,23 @@ export default function ProjectModal({ project, onClose }: Props) {
 
   // Prevent background scrolling safely
   useScrollLock(true);
+
+  // Track PROJECT_OPEN and PROJECT_CLOSE
+  useEffect(() => {
+    const startTime = Date.now();
+    trackEvent({
+      type: TELEMETRY_EVENTS.PROJECT_OPEN,
+      metadata: { project: project.title, project_id: project.id }
+    });
+
+    return () => {
+      const durationSeconds = Math.round((Date.now() - startTime) / 1000);
+      trackEvent({
+        type: TELEMETRY_EVENTS.PROJECT_CLOSE,
+        metadata: { project: project.title, project_id: project.id, duration_seconds: durationSeconds }
+      });
+    };
+  }, [project.title, project.id]);
 
   // Handle Escape
   useEffect(() => {

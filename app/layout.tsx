@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeInit from "@/components/ThemeInit";
+import Navbar from "@/components/ui/Navbar";
+import AnalyticsTracker from "@/components/AnalyticsTracker";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +54,9 @@ export default function RootLayout({
 
         {/* Main App */}
         <div className="flex-1 flex flex-col pb-safe">
+          <Suspense fallback={null}>
+            <AnalyticsTracker />
+          </Suspense>
           {children}
         </div>
 

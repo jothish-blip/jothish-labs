@@ -6,13 +6,18 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed-admin": "node scripts/seed-admin.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
     "@headlessui/react": "^2.2.10",
     "@react-three/drei": "^10.7.7",
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.3",
     "autoprefixer": "^10.5.4",
+    "date-fns": "^4.4.0",
+    "dotenv": "^17.4.2",
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
@@ -23,12 +28,14 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-icons": "^5.6.0",
-    "react-parallax-tilt": "^1.7.326"
+    "react-parallax-tilt": "^1.7.326",
+    "uuid": "^14.0.1"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^3.4.19",

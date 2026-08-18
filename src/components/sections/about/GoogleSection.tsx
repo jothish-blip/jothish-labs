@@ -9,6 +9,7 @@ import SpecializationModal from "./SpecializationModal";
 
 import { googleSpecializations } from "./data";
 import { GoogleSpecialization } from "./types";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 export default function GoogleSection() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +19,10 @@ export default function GoogleSection() {
 
   const handleOpenModal = (specialization: GoogleSpecialization) => {
     setSelectedSpecialization(specialization);
+    trackEvent({
+      type: TELEMETRY_EVENTS.CERTIFICATE_OPEN,
+      metadata: { certificate: specialization.title }
+    });
   };
 
   const handleCloseModal = () => {
