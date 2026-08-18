@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { activeCerts } from "./data";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 // Red specifically for the CompTIA brand wordmark
 function CompTIAWordmark() {
@@ -125,6 +126,10 @@ export default function CompTIASection() {
 
   const handleOpen = () => {
     setIsOpen(true);
+    trackEvent({
+      type: TELEMETRY_EVENTS.CERTIFICATE_OPEN,
+      metadata: { section: "CompTIA" }
+    });
   };
 
   const handleClose = () => {

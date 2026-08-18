@@ -5,6 +5,7 @@ import { handleCommand, state, availableCommands, analytics } from "@/lib/termin
 import { Copy, X, Minus, Maximize2 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { useRouter } from "next/navigation";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 type HistoryItem = { command: string; output: string; isRoot: boolean };
 type TabData = { id: number; history: HistoryItem[]; isRoot: boolean };
@@ -177,6 +178,11 @@ export default function Terminal() {
     
     setHistory((prev) => [...prev, { command: currentInput, output: "processing...", isRoot }]);
     
+    trackEvent({
+      type: TELEMETRY_EVENTS.TERMINAL_COMMAND,
+      metadata: { command: currentInput.split(' ')[0], raw: currentInput }
+    });
+    
     const result = handleCommand(currentInput);
     setIsRoot(state.isRoot);
 
@@ -200,6 +206,16 @@ export default function Terminal() {
         return newArr;
       });
       router.push("/Resume?from=terminal");
+      return;
+    }
+
+    if (result === "__OPEN_OPS__") {
+      setHistory(prev => {
+        const newArr = [...prev];
+        newArr[newArr.length - 1].output = "Initializing Secure Connection...";
+        return newArr;
+      });
+      router.push("/ops");
       return;
     }
 

@@ -7,6 +7,7 @@ import { FaPhoneAlt, FaLinkedin, FaEnvelope, FaCheckCircle, FaExclamationCircle 
 import { VscLoading } from "react-icons/vsc";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 // Define Intent Types
 type IntentType = "conversation" | "questions" | "work" | "internship";
@@ -119,23 +120,47 @@ export default function Contact() {
     }
   };
 
-  const sendEmail = (e: React.FormEvent) => {
+  const sendEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     setStatus("sending");
 
-    const SERVICE_ID = "your_service_id"; 
-    const TEMPLATE_ID = "your_template_id";
-    const PUBLIC_KEY = "your_public_key";
-
-    emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, formRef.current!, PUBLIC_KEY)
-      .then(() => {
-        setStatus("success");
-        const timer = setTimeout(() => resetFlow(), 8000);
-        setSuccessTimer(timer);
-      }, () => {
-        setStatus("error");
-        setTimeout(() => setStatus("idle"), 5000);
+    try {
+      // 1. Send to Supabase DB (Isolated Portfolio Table)
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          intent
+        })
       });
+
+      if (!res.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      // 2. Fallback / Parallel EmailJS 
+      const SERVICE_ID = "your_service_id"; 
+      const TEMPLATE_ID = "your_template_id";
+      const PUBLIC_KEY = "your_public_key";
+      
+      // We don't await this so it doesn't block success if EmailJS is unconfigured
+      emailjs.sendForm(SERVICE_ID, TEMPLATE_ID, formRef.current!, PUBLIC_KEY).catch(() => {});
+
+      setStatus("success");
+      
+      trackEvent({
+        type: TELEMETRY_EVENTS.CONTACT_SUBMIT,
+        metadata: { intent }
+      });
+      
+      const timer = setTimeout(() => resetFlow(), 8000);
+      setSuccessTimer(timer);
+
+    } catch {
+      setStatus('error');
+      setTimeout(() => setStatus("idle"), 5000);
+    }
   };
 
   const channels = [

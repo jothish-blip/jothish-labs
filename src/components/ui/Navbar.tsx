@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useScrollLock } from "@/hooks/useScrollLock";
+import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 
 // --- SYSTEM COLOR & LABEL CONFIG ---
 const sections = ["about", "projects", "skills", "terminal", "contact"];
@@ -87,6 +88,12 @@ export default function Navbar() {
     
     // 3. Persist to localStorage
     localStorage.setItem("theme", newTheme);
+
+    // Track Theme Change
+    trackEvent({
+      type: TELEMETRY_EVENTS.THEME_CHANGED,
+      metadata: { theme: newTheme }
+    });
   };
 
   // Lock background scroll when mobile menu or resume modal is open
