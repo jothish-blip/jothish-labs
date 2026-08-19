@@ -55,15 +55,15 @@ export async function POST(request: Request) {
     } = body;
     
     const headersList = await headers();
-    const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || headersList.get('x-real-ip') || headersList.get('cf-connecting-ip') || '127.0.0.1';
+    const ip = headersList.get('cf-connecting-ip') || headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || headersList.get('x-real-ip') || '127.0.0.1';
     const isLocal = ip === '127.0.0.1' || ip === '::1' || ip.includes('localhost') || process.env.NODE_ENV === 'development';
     const environment = isLocal ? 'Local Development' : 'Production';
     
-    const country = isLocal ? null : headersList.get('x-vercel-ip-country');
-    const region = isLocal ? null : headersList.get('x-vercel-ip-country-region');
-    const city = isLocal ? null : headersList.get('x-vercel-ip-city');
-    const latitude = isLocal ? null : headersList.get('x-vercel-ip-latitude');
-    const longitude = isLocal ? null : headersList.get('x-vercel-ip-longitude');
+    const country = isLocal ? null : (headersList.get('cf-ipcountry') || headersList.get('x-vercel-ip-country'));
+    const region = isLocal ? null : (headersList.get('cf-ipregion') || headersList.get('x-vercel-ip-country-region'));
+    const city = isLocal ? null : (headersList.get('cf-ipcity') || headersList.get('x-vercel-ip-city'));
+    const latitude = isLocal ? null : (headersList.get('cf-iplatitude') || headersList.get('x-vercel-ip-latitude'));
+    const longitude = isLocal ? null : (headersList.get('cf-iplongitude') || headersList.get('x-vercel-ip-longitude'));
     
     // Extracted Advanced Headers
     const isp = isLocal ? null : headersList.get('x-vercel-ip-city') ? 'Vercel Edge' : null;
@@ -167,10 +167,6 @@ export async function POST(request: Request) {
       region,
       city,
       isp,
-      asn,
-      postal_code,
-      network_type,
-      bot_detection,
       latitude: latitude ? parseFloat(latitude) : null,
       longitude: longitude ? parseFloat(longitude) : null,
       utm_source: utm_source || null,
@@ -214,7 +210,7 @@ export async function POST(request: Request) {
     // 3. Upsert Session
     const sessionRes = await safeDbOperation(supabase
       .from('portfolio_sessions')
-      .select('id, page_view_count, navigation_path, active_duration, idle_duration, created_at, last_ping_at')
+      .select('id, page_view_count, active_duration, idle_duration, created_at, last_ping_at')
       .eq('session_id', sessionId)
       .single());
 
@@ -239,7 +235,6 @@ export async function POST(request: Request) {
         referrer: referrer,
         device_snapshot: deviceSnapshot,
         page_view_count: type === 'page_view' ? 1 : 0,
-        navigation_path: type === 'page_view' ? [path] : [],
         utm_source: utm_source,
         utm_medium: utm_medium,
         utm_campaign: utm_campaign
@@ -252,12 +247,6 @@ export async function POST(request: Request) {
       if (type === 'page_view') {
         updates.page_view_count = (sessionData.page_view_count || 0) + 1;
         updates.exit_page = path;
-        
-        let navPath = Array.isArray(sessionData.navigation_path) ? sessionData.navigation_path : [];
-        if (navPath[navPath.length - 1] !== path) {
-           navPath = [...navPath, path];
-        }
-        updates.navigation_path = navPath;
       }
       
       if (type === 'ping' || type === 'page_view') {

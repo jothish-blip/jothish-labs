@@ -37,7 +37,7 @@ export default function NotificationSystem() {
 
   useEffect(() => {
     // 1. Listen for new contacts
-    const contactsChannel = supabase.channel('contacts_hud')
+    const contactsChannel = supabase.channel(`contacts_hud_${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_contacts' }, (payload) => {
         addNotification({
           title: 'Inbound Communication',
@@ -48,7 +48,7 @@ export default function NotificationSystem() {
       .subscribe();
 
     // 2. Listen for security audit logs
-    const auditChannel = supabase.channel('audit_hud')
+    const auditChannel = supabase.channel(`audit_hud_${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' }, (payload) => {
         if (payload.new.action === 'FAILED_LOGIN' || payload.new.action === 'BLOCK_IP' || payload.new.action.includes('THREAT')) {
           addNotification({
@@ -61,7 +61,7 @@ export default function NotificationSystem() {
       .subscribe();
 
     // 3. Listen for specific telemetry events (e.g. resume download, api errors)
-    const eventsChannel = supabase.channel('events_hud')
+    const eventsChannel = supabase.channel(`events_hud_${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_events' }, (payload) => {
         if (payload.new.event_type === 'RESUME_DOWNLOAD') {
           addNotification({

@@ -77,6 +77,7 @@ export const trackEvent = async ({
     await fetch('/api/telemetry/events', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
       body: JSON.stringify({
         type: 'custom_event',
         event_type: type,

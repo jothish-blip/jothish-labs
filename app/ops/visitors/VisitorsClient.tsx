@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Search, Monitor, Globe, Clock, Crosshair, ArrowUpRight, ArrowLeftRight, Activity } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import VisitorDossier from './VisitorDossier';
 
 type Visitor = {
@@ -37,6 +38,16 @@ type Props = {
 export default function VisitorsClient({ visitors, recentSessions }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!selectedVisitor) {
+        router.refresh();
+      }
+    }, 5000); // 5 seconds
+    return () => clearInterval(interval);
+  }, [router, selectedVisitor]);
 
   const filteredVisitors = visitors.filter(v => 
     v.visitor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||

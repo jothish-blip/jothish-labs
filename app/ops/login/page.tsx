@@ -65,6 +65,7 @@ export default function OpsAuthPage() {
                 type="email" 
                 name="email"
                 required
+                suppressHydrationWarning
                 className="w-full bg-surface/30 border border-surface rounded-sm px-4 py-2.5 text-sm focus:outline-none focus:border-[#E4002B]/50 focus:bg-surface/50 transition-colors text-foreground font-mono"
                 placeholder="admin@system.local"
               />
@@ -78,6 +79,7 @@ export default function OpsAuthPage() {
                 type="password" 
                 name="password"
                 required
+                suppressHydrationWarning
                 className="w-full bg-surface/30 border border-surface rounded-sm px-4 py-2.5 text-sm focus:outline-none focus:border-[#E4002B]/50 focus:bg-surface/50 transition-colors text-foreground font-mono"
                 placeholder="••••••••••••"
               />
@@ -92,6 +94,7 @@ export default function OpsAuthPage() {
             <button 
               type="submit"
               disabled={loading}
+              suppressHydrationWarning
               className="w-full flex items-center justify-center gap-2 py-3 bg-foreground text-background font-mono text-[11px] uppercase tracking-widest font-semibold rounded-sm hover:bg-muted transition-colors disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Authenticate'}

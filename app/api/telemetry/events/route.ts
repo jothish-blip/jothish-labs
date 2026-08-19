@@ -65,22 +65,15 @@ export async function POST(request: Request) {
         .single());
 
       if (firstView) {
-        const view = firstView as { created_at: string };
-        const duration = Math.max(0, Math.round((Date.now() - new Date(view.created_at).getTime()) / 1000));
-        await supabase.from('portfolio_sessions').update({
-          duration: duration,
-          bounced: duration < 10
-        }).eq('session_id', sessionId);
-        
-        // Update visitor total time spent
+        // Just update visitor total time spent from accurate session data
         const allSessions = await safeDbOperation(supabase
           .from('portfolio_sessions')
-          .select('duration')
+          .select('total_duration')
           .eq('visitor_id', visitorId));
         
         if (allSessions.data) {
-          const sessionsList = allSessions.data as { duration: number }[];
-          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.duration || 0), 0);
+          const sessionsList = allSessions.data as { total_duration: number }[];
+          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.total_duration || 0), 0);
           await supabase.from('portfolio_visitors').update({
             total_time_spent: totalDuration,
             last_visit: new Date().toISOString()
@@ -111,7 +104,6 @@ export async function POST(request: Request) {
 
       if (sessionRes.data) {
         const sessionData = sessionRes.data as any;
-        const duration = Math.max(0, Math.round((Date.now() - new Date(sessionData.created_at).getTime()) / 1000));
         
         let entry_page = sessionData.entry_page;
         let exit_page = sessionData.exit_page;
@@ -127,7 +119,6 @@ export async function POST(request: Request) {
 
         await supabase.from('portfolio_sessions').update({
           event_count: (sessionData.event_count || 0) + 1,
-          duration: duration,
           entry_page: entry_page,
           exit_page: exit_page,
           updated_at: new Date().toISOString()
@@ -136,12 +127,12 @@ export async function POST(request: Request) {
         // Update visitor total time spent
         const allSessions = await safeDbOperation(supabase
           .from('portfolio_sessions')
-          .select('duration')
+          .select('total_duration')
           .eq('visitor_id', visitorId));
         
         if (allSessions.data) {
-          const sessionsList = allSessions.data as { duration: number }[];
-          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.duration || 0), 0);
+          const sessionsList = allSessions.data as { total_duration: number }[];
+          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.total_duration || 0), 0);
           await supabase.from('portfolio_visitors').update({
             total_time_spent: totalDuration,
             last_visit: new Date().toISOString()

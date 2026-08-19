@@ -33,10 +33,6 @@ export default function OpsLayout({
 
   return (
     <div className="flex min-h-screen bg-background font-sans text-foreground overflow-hidden">
-      <head>
-        <meta name="robots" content="noindex, nofollow, nosnippet, noarchive" />
-        <meta name="googlebot" content="noindex, nofollow" />
-      </head>
       <Sidebar setSearchOpen={setSearchOpen} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
 
       {/* Main Content Area */}

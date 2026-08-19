@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Activity, Users, Lock, Save, Bell, Database, Mail, Globe, Monitor, Code } from 'lucide-react';
+import { Shield, Activity, Lock, Save, Bell, Globe } from 'lucide-react';
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { saveSettingsAction } from './actions';
@@ -39,11 +39,7 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'telemetry', label: 'Telemetry', icon: Activity },
     { id: 'notifications', label: 'Alerts', icon: Bell },
-    { id: 'database', label: 'Database', icon: Database },
-    { id: 'mailer', label: 'SMTP Mailer', icon: Mail },
-    { id: 'ui', label: 'Interface', icon: Monitor },
-    { id: 'dev', label: 'Developer', icon: Code },
-    { id: 'profile', label: 'Profile', icon: Users },
+
   ];
 
   return (
@@ -239,16 +235,7 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
              </div>
            )}
 
-           {['database', 'mailer', 'ui', 'dev', 'profile'].includes(activeTab) && (
-             <div className="space-y-8 max-w-2xl animate-in fade-in">
-                <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-foreground mb-6 border-b border-surface pb-2 flex items-center gap-2">
-                  Module Configuration
-                </h2>
-                <div className="p-8 text-center border border-dashed border-surface rounded-sm text-muted font-mono text-[10px] uppercase tracking-widest">
-                  Module initialized. Configuration options not yet registered.
-                </div>
-             </div>
-           )}
+
 
         </div>
       </div>

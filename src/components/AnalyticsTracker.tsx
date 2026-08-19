@@ -27,6 +27,7 @@ export default function AnalyticsTracker() {
         await fetch('/api/telemetry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
           body: JSON.stringify({
             path: pathname,
             title: document.title,
@@ -150,6 +151,7 @@ export default function AnalyticsTracker() {
       fetch('/api/telemetry/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: data,
         keepalive: true
       }).catch(() => {});
@@ -165,6 +167,7 @@ export default function AnalyticsTracker() {
       fetch('/api/telemetry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           path: pathname,
           type: 'ping'

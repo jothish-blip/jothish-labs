@@ -46,7 +46,8 @@ export async function enrollMfa() {
     await supabase.auth.mfa.unenroll({ factorId: unverified.id });
   }
 
-  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+  const friendlyName = `Admin Authenticator ${Date.now()}`;
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName });
   if (error) return { error: error.message };
 
   return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
@@ -89,7 +90,8 @@ export async function verifyMfa(formData: FormData) {
   }
 
   // Insert session
-  const supabaseAdmin = await createClient(); // assuming elevated client if needed, or just standard if RLS allows
+  const { createAdminClient } = await import('@/utils/supabase/server');
+  const supabaseAdmin = await createAdminClient(); 
   const sessionToken = session.access_token;
   
   await supabaseAdmin.from('portfolio_admin_sessions').insert({

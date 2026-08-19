@@ -114,16 +114,33 @@ export async function middleware(request: NextRequest) {
       // Enforce AAL2 (MFA) here if factors are configured for admin.
       const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
       
+      let requiresMfa = false;
+
+      // Default to strict if we can't read settings
+      const { data: settings } = await supabase.from('portfolio_settings').select('value').eq('key', 'enforce_mfa').maybeSingle();
+      const enforceMfa = settings?.value?.replace(/"/g, '') || 'strict';
+
       if (!mfaError && mfaData) {
         const { currentLevel, nextLevel } = mfaData;
-        if (nextLevel === 'aal2' && nextLevel !== currentLevel && !isMfaRoute) {
+        
+        if (nextLevel === 'aal2' && currentLevel !== 'aal2') {
+          requiresMfa = true;
+        } else if (nextLevel === 'aal1' && enforceMfa === 'strict') {
+          requiresMfa = true;
+        }
+      } else {
+        if (enforceMfa === 'strict') requiresMfa = true;
+      }
+
+      if (requiresMfa) {
+        if (!isMfaRoute) {
           return NextResponse.redirect(new URL('/ops/login/mfa', request.url));
         }
-      }
-      
-      if (isAuthRoute) {
-        const redirectUrl = new URL('/ops', request.url);
-        return NextResponse.redirect(redirectUrl);
+      } else {
+        // MFA is fulfilled (or not strictly enforced and no AAL2 set)
+        if (isAuthRoute || isMfaRoute) {
+          return NextResponse.redirect(new URL('/ops', request.url));
+        }
       }
     }
   }

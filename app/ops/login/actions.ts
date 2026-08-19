@@ -138,7 +138,24 @@ export async function login(formData: FormData) {
   const adminId = data?.user?.id ?? null;
   const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-  if (!assuranceError && assurance && assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2') {
+  // Check site-wide MFA setting
+  const { data: settings } = await supabaseAdmin.from('portfolio_settings').select('value').eq('key', 'enforce_mfa').single();
+  const enforceMfa = settings?.value?.replace(/"/g, '') || 'strict';
+
+  let requiresMfa = false;
+
+  if (assurance) {
+    if (assurance.nextLevel === 'aal2' && assurance.currentLevel !== 'aal2') {
+      requiresMfa = true;
+    } else if (assurance.nextLevel === 'aal1' && enforceMfa === 'strict') {
+      requiresMfa = true;
+    }
+  } else {
+    // If we can't determine assurance level, but MFA is enforced, require it.
+    if (enforceMfa === 'strict') requiresMfa = true;
+  }
+
+  if (requiresMfa) {
     await safeAuditInsert(supabaseAdmin, {
       admin_id: adminId,
       actor: email || 'unknown',
@@ -148,7 +165,7 @@ export async function login(formData: FormData) {
       location: context.location,
       browser: context.browser,
       os: context.os,
-      details: { ...context, email, nextLevel: assurance.nextLevel, currentLevel: assurance.currentLevel }
+      details: { ...context, email, message: 'Strict MFA enforced.' }
     });
     return { requiresMfa: true, email };
   }

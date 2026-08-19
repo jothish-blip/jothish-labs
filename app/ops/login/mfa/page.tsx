@@ -121,6 +121,7 @@ export default function OpsMfaPage() {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 placeholder="123456"
+                suppressHydrationWarning
                 className="w-full bg-surface/30 border border-surface rounded-sm px-4 py-2.5 text-sm focus:outline-none focus:border-[#E4002B]/50 focus:bg-surface/50 transition-colors text-foreground font-mono text-center tracking-[0.5em]"
                 required
               />
@@ -135,6 +136,7 @@ export default function OpsMfaPage() {
             <button
               type="submit"
               disabled={loading}
+              suppressHydrationWarning
               className="w-full rounded-sm bg-foreground px-4 py-3 font-mono text-[11px] uppercase tracking-[0.2em] text-background transition-colors hover:bg-muted disabled:opacity-60"
             >
               {loading ? (

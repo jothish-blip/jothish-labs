@@ -42,7 +42,7 @@ export default function NotificationPanel() {
     fetchNotifs();
 
     const channel = supabase
-      .channel('public:portfolio_notifications')
+      .channel(`public:portfolio_notifications_${crypto.randomUUID()}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_notifications' }, (payload) => {
         setNotifications(prev => [payload.new as Notification, ...prev]);
       })

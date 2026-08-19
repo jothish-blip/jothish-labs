@@ -185,7 +185,7 @@ export default function Navbar() {
 
   const smoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
-    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10); // Micro UX Upgrades
+    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(10); 
 
     const el = document.getElementById(id);
     if (el) {
@@ -193,8 +193,13 @@ export default function Navbar() {
       const yOffset = -100;
       const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
 
-      window.scrollTo({ top: y, behavior: "smooth" });
+      // Close menu first to unlock scroll
       setMenuOpen(false);
+
+      // Give React time to remove overflow:hidden
+      setTimeout(() => {
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }, 50);
 
       setTimeout(() => {
         document.body.style.cursor = "default";
@@ -202,7 +207,6 @@ export default function Navbar() {
     }
   };
 
-  // Base accent on Hero color if no section is active yet
   const activeColorVar = active ? sectionConfig[active].cssVar : "var(--accent-hero)";
 
   return (
@@ -212,9 +216,9 @@ export default function Navbar() {
         :root {
           --accent-hero: #6366f1;
           --accent-about: #52525b;
-          --accent-projects: #ca8a04; /* Yellow-600 */
+          --accent-projects: #ca8a04;
           --accent-skills: #059669;
-          --accent-terminal: #dc2626; /* Sleek Crimson Red */
+          --accent-terminal: #dc2626;
           --accent-contact: #2563eb;
           scroll-behavior: smooth;
           scroll-padding-top: 100px;
@@ -222,9 +226,9 @@ export default function Navbar() {
         html.dark {
           --accent-hero: #818cf8;
           --accent-about: #a1a1aa;
-          --accent-projects: #fb923c; /* Glowing Neon Orange */
+          --accent-projects: #fb923c;
           --accent-skills: #34d399;
-          --accent-terminal: #ef4444; /* High-Visibility Hacker Red */
+          --accent-terminal: #ef4444;
           --accent-contact: #60a5fa;
         }
       `}</style>
@@ -259,7 +263,7 @@ export default function Navbar() {
 
         {/* PROGRESS PERCENTAGE: Visible on both mobile and desktop when scrolled */}
         <div
-          className={`absolute top-2 right-4 md:right-6 text-[9px] font-bold font-mono tracking-widest block transition-colors duration-500 ${
+          className={`absolute top-4 right-16 md:top-2 md:right-6 text-[9px] font-bold font-mono tracking-widest block transition-colors duration-500 ${
             scrolled ? "opacity-100" : "opacity-0"
           }`}
           style={{ color: activeColorVar }}
