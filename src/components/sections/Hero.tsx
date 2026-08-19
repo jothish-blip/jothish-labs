@@ -216,7 +216,8 @@ export default function Hero() {
               See Security Projects
             </a>
             <a
-              href="/Resume"
+              href="/Jothish_Gandham_Cybersecurity_Resume.pdf"
+              target="_blank"
               onClick={() => {
                 handleInteraction();
                 import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.CTA_CLICK, metadata: { target: 'resume' } }));
@@ -235,15 +236,15 @@ export default function Hero() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
               
               <a 
-                href="https://linkedin.com/in/jothish-gandham" 
+                href="https://www.linkedin.com/in/jothish-gandham-5b90b334a/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 onClick={() => import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.SOCIAL_CLICK, metadata: { platform: 'linkedin' } }))}
-                className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
+                className="flex items-center gap-3 p-3 border border-surface bg-background rounded-sm hover:border-surface-strong hover:bg-surface/20 transition-all duration-300 group"
               >
                 <LinkedinIcon className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
                 <span className="text-[10px] font-mono text-muted group-hover:text-foreground tracking-[0.1em] truncate transition-colors">
-                  linkedin.com/in/jothish
+                  linkedin.com/in/jothish-gandham-5b90b334a
                 </span>
               </a>
               

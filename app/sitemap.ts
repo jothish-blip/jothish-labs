@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next';
 import { projects } from '@/lib/projects/projectData';
 import { googleSpecializations } from '@/components/sections/about/data';
 
-const SITE_URL = 'https://webjothishanalyst.site';
+const SITE_URL = 'https://www.webjothishanalyst.site';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [

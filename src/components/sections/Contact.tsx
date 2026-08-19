@@ -172,7 +172,7 @@ export default function Contact() {
 
   const channels = [
     { icon: FaEnvelope, label: "Email", value: "jothishgandham2@gmail.com", href: "mailto:jothishgandham2@gmail.com" },
-    { icon: FaLinkedin, label: "LinkedIn", value: "in/jothish", href: "https://www.linkedin.com/in/jothish-gandham-5b90b334a" },
+    { icon: FaLinkedin, label: "LinkedIn", value: "in/jothish-gandham-5b90b334a", href: "https://www.linkedin.com/in/jothish-gandham-5b90b334a/" },
     { icon: SiGithub, label: "GitHub", value: "jothish-blip", href: "https://github.com/jothish-blip" },
     { icon: FaPhoneAlt, label: "Phone", value: "+91 8374754009", href: "tel:+918374754009" }
   ];

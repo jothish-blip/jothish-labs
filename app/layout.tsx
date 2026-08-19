@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://webjothishanalyst.site'),
+  metadataBase: new URL('https://www.webjothishanalyst.site'),
   title: "Jothish Gandham — Cybersecurity Analyst & Detection Engineer",
   description: "Cybersecurity portfolio of Jothish Gandham (Gandham Jothish Guru Karthikeya Reddy). Showcasing expertise in SOC Operations, Threat Detection, Incident Response, SIEM (Splunk, Microsoft Sentinel, Wazuh), and Security Automation.",
   keywords: [
@@ -30,12 +30,12 @@ export const metadata: Metadata = {
     "Splunk", "Microsoft Sentinel", "Wazuh", "Security Automation", "Detection Engineering",
     "Purple Team", "Portfolio", "Cybersecurity Portfolio"
   ],
-  authors: [{ name: "Jothish Gandham", url: "https://webjothishanalyst.site" }],
+  authors: [{ name: "Jothish Gandham", url: "https://www.webjothishanalyst.site" }],
   creator: "Jothish Gandham",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://webjothishanalyst.site",
+    url: "https://www.webjothishanalyst.site",
     title: "Jothish Gandham — Cybersecurity Analyst Portfolio",
     description: "Cybersecurity portfolio showcasing expertise in SOC Operations, Threat Detection, Incident Response, SIEM, and Security Automation.",
     siteName: "Jothish Gandham",
@@ -70,6 +70,9 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
+  },
+  verification: {
+    google: "YOUR_GOOGLE_VERIFICATION_CODE_HERE", // Replace this with your actual code from Search Console if using meta tag
   },
 };
 

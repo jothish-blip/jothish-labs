@@ -29,9 +29,9 @@ const SECTIONS = [
 ];
 
 const RESOURCES = [
-  { name: 'Resume', href: '/Resume', icon: FileText, external: false },
+  { name: 'Resume', href: '/Jothish_Gandham_Cybersecurity_Resume.pdf', icon: FileText, external: true },
   { name: 'GitHub', href: 'https://github.com/JothishGandham', icon: FaGithub, external: true },
-  { name: 'LinkedIn', href: 'https://www.linkedin.com/in/jothish-gandham/', icon: FaLinkedin, external: true },
+  { name: 'LinkedIn', href: 'https://www.linkedin.com/in/jothish-gandham-5b90b334a/', icon: FaLinkedin, external: true },
   { name: 'Email', href: 'mailto:gandhamjothish1@gmail.com', icon: Mail, external: true },
   { name: 'SOC Dashboard', href: '/ops', icon: Shield, external: false },
 ];
