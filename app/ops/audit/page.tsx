@@ -13,11 +13,15 @@ export default async function OpsAudit() {
     .order('created_at', { ascending: false })
     .limit(500);
 
-  const { data: portfolioLogs } = await supabase
+  const { data: portfolioLogs, error: portfolioError } = await supabase
     .from('portfolio_events')
-    .select('id, created_at, event_type, event_name, visitor_id, session_id, metadata, event_data')
+    .select('id, created_at, event_type, event_name, visitor_id, session_id, event_data')
     .order('created_at', { ascending: false })
     .limit(500);
+
+  if (portfolioError) {
+    console.error('Error fetching portfolio events:', portfolioError);
+  }
 
   return (
     <AuditClient initialAdminLogs={adminLogs || []} initialPortfolioLogs={portfolioLogs || []} />

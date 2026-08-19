@@ -133,8 +133,11 @@ export async function middleware(request: NextRequest) {
       }
 
       if (requiresMfa) {
-        if (!isMfaRoute) {
-          return NextResponse.redirect(new URL('/ops/login/mfa', request.url));
+        if (isMfaRoute || isAuthRoute) {
+          // Allow them to be on the login or MFA page to complete authentication
+        } else {
+          // If they try to access the dashboard directly without finishing MFA, send them back to the login page to start over
+          return NextResponse.redirect(new URL('/ops/login', request.url));
         }
       } else {
         // MFA is fulfilled (or not strictly enforced and no AAL2 set)

@@ -103,15 +103,15 @@ export default async function OpsOverview() {
 
   // Third Row
   // 1. Most Viewed Projects
-  const { data: projectEvents } = await supabase
+  const { data: projectEvents, error: projectError } = await supabase
     .from('portfolio_events')
-    .select('metadata')
+    .select('event_data')
     .eq('event_type', 'PROJECT_OPEN');
     
   // 2. Most Viewed Certificates
-  const { data: certEvents } = await supabase
+  const { data: certEvents, error: certError } = await supabase
     .from('portfolio_events')
-    .select('metadata')
+    .select('event_data')
     .in('event_type', ['CERTIFICATE_OPEN', 'CERTIFICATE_VERIFY']);
 
   // 3 & 4. Browser and Device Distribution
@@ -120,14 +120,14 @@ export default async function OpsOverview() {
     .select('browser, device_type');
 
   const projectCounts: Record<string, number> = {};
-  projectEvents?.forEach((e: { metadata: Record<string, unknown> }) => {
-    const p = (e.metadata?.project || e.metadata?.certificate || 'Unknown') as string;
+  projectEvents?.forEach((e: { event_data: Record<string, unknown> }) => {
+    const p = (e.event_data?.project || e.event_data?.certificate || 'Unknown') as string;
     projectCounts[p] = (projectCounts[p] || 0) + 1;
   });
 
   const certCounts: Record<string, number> = {};
-  certEvents?.forEach((e: { metadata: Record<string, unknown> }) => {
-    const c = (e.metadata?.certificate || e.metadata?.title || 'Unknown') as string;
+  certEvents?.forEach((e: { event_data: Record<string, unknown> }) => {
+    const c = (e.event_data?.certificate || e.event_data?.title || 'Unknown') as string;
     certCounts[c] = (certCounts[c] || 0) + 1;
   });
 

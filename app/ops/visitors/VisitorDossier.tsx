@@ -31,20 +31,52 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
   const [blocking, setBlocking] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    
     async function fetchDossier() {
       try {
         const res = await fetch(`/api/ops/visitors/${visitorId}`);
         if (!res.ok) throw new Error('Failed to fetch dossier');
         const json = await res.json();
-        setData(json);
-        setIsBlocked(json.isBlocked);
+        if (isMounted) {
+          setData(json);
+          setIsBlocked(json.isBlocked);
+        }
       } catch (e: any) {
-        setError(e.message);
+        if (isMounted) setError(e.message);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
+    
     fetchDossier();
+
+    const { createClient } = require('@/utils/supabase/client');
+    const supabase = createClient();
+    
+    const channelName = `visitor-dossier-${visitorId}`;
+    const channel = supabase.channel(channelName)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'portfolio_events', filter: `visitor_id=eq.${visitorId}` },
+        () => fetchDossier()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'portfolio_sessions', filter: `visitor_id=eq.${visitorId}` },
+        () => fetchDossier()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'portfolio_visitors', filter: `visitor_id=eq.${visitorId}` },
+        () => fetchDossier()
+      )
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
   }, [visitorId]);
 
   const handleBlockToggle = async () => {

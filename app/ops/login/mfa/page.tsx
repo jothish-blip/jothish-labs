@@ -15,6 +15,7 @@ export default function OpsMfaPage() {
   const [needsEnrollment, setNeedsEnrollment] = useState(false);
   const [qrCodeSvg, setQrCodeSvg] = useState<string | null>(null);
   const [secretKey, setSecretKey] = useState<string | null>(null);
+  const [totpUri, setTotpUri] = useState<string | null>(null);
 
   useEffect(() => {
     async function init() {
@@ -33,6 +34,7 @@ export default function OpsMfaPage() {
         } else {
           setQrCodeSvg(enrollment.qrCode ?? null);
           setSecretKey(enrollment.secret ?? null);
+          setTotpUri(enrollment.uri ?? null);
         }
       }
       setInitializing(false);
@@ -99,10 +101,18 @@ export default function OpsMfaPage() {
                 Scan this QR code with Google Authenticator or Authy to secure your admin account.
               </p>
               <div 
-                className="bg-white p-2 rounded-sm mb-4 [&>svg]:w-40 [&>svg]:h-40" 
+                className="bg-white p-2 rounded-sm mb-4 [&>svg]:w-40 [&>svg]:h-40 hidden sm:block" 
                 dangerouslySetInnerHTML={{ __html: qrCodeSvg }} 
               />
-              <p className="text-[9px] font-mono text-muted">Manual Key:</p>
+              {totpUri && (
+                <a 
+                  href={totpUri} 
+                  className="mb-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#E4002B]/10 text-[#E4002B] border border-[#E4002B]/20 rounded-sm font-mono text-[11px] uppercase tracking-widest hover:bg-[#E4002B]/20 transition-colors sm:hidden"
+                >
+                  <ScanLine size={16} /> Open Authenticator
+                </a>
+              )}
+              <p className="text-[9px] font-mono text-muted mt-2">Manual Key:</p>
               <p className="text-xs font-mono text-foreground select-all bg-surface/50 px-2 py-1 rounded-sm mt-1">
                 {secretKey}
               </p>

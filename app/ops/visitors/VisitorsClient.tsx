@@ -5,6 +5,7 @@ import { formatDistanceToNow, format } from 'date-fns';
 import { Search, Monitor, Globe, Clock, Crosshair, ArrowUpRight, ArrowLeftRight, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import VisitorDossier from './VisitorDossier';
+import { createClient } from '@/utils/supabase/client';
 
 type Visitor = {
   id: string;
@@ -35,19 +36,65 @@ type Props = {
   recentSessions: any[];
 };
 
-export default function VisitorsClient({ visitors, recentSessions }: Props) {
+export default function VisitorsClient({ visitors: initialVisitors, recentSessions }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
+  const [visitors, setVisitors] = useState<Visitor[]>(initialVisitors);
+  const supabase = createClient();
   const router = useRouter();
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      if (!selectedVisitor) {
-        router.refresh();
+    let retryCount = 0;
+    const maxRetries = 5;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isComponentMounted = true;
+    
+    const connectChannel = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
       }
-    }, 5000); // 5 seconds
-    return () => clearInterval(interval);
-  }, [router, selectedVisitor]);
+      
+      const channelName = `visitors-feed`;
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'portfolio_visitors' },
+          (payload) => {
+            if (!isComponentMounted) return;
+            
+            if (payload.eventType === 'INSERT') {
+              setVisitors(prev => [payload.new as Visitor, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+              setVisitors(prev => prev.map(v => v.visitor_id === (payload.new as Visitor).visitor_id ? (payload.new as Visitor) : v));
+            } else if (payload.eventType === 'DELETE') {
+              setVisitors(prev => prev.filter(v => v.id !== payload.old.id));
+            }
+          }
+        );
+        
+      channel.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          retryCount = 0;
+        }
+        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          if (isComponentMounted && retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(() => {
+              if (isComponentMounted) connectChannel();
+            }, 2000 * retryCount);
+          }
+        }
+      });
+    };
+
+    connectChannel();
+
+    return () => {
+      isComponentMounted = false;
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [supabase]);
 
   const filteredVisitors = visitors.filter(v => 
     v.visitor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||

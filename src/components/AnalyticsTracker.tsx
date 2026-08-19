@@ -3,15 +3,52 @@
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+  return null;
+}
+
+function setCookie(name: string, value: string, maxAge: number) {
+  document.cookie = `${name}=${value}; max-age=${maxAge}; path=/`;
+}
+
 export default function AnalyticsTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const viewStartTime = useRef<number>(0);
   const maxScroll = useRef<number>(0);
+  const trackTimer = useRef<NodeJS.Timeout | null>(null);
+  const pingInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Exclude ops console
     if (pathname.startsWith('/ops')) return;
+
+    // Ensure cookies exist on client side before making requests
+    let vid = getCookie('pf_vid');
+    let sid = getCookie('pf_sid');
+    
+    if (!vid) {
+      vid = generateUUID();
+      setCookie('pf_vid', vid, 60 * 60 * 24 * 365 * 2);
+    }
+    
+    if (!sid) {
+      sid = generateUUID();
+      setCookie('pf_sid', sid, 60 * 30);
+    }
 
     viewStartTime.current = Date.now();
     maxScroll.current = 0;
@@ -94,11 +131,14 @@ export default function AnalyticsTracker() {
       });
     }, { threshold: 0.3 }); // Lower threshold for taller sections
 
-    const sections = document.querySelectorAll('section[id]');
-    sections.forEach(section => observer.observe(section));
+    // Delay observer start slightly to ensure page load
+    setTimeout(() => {
+      const sections = document.querySelectorAll('section[id]');
+      sections.forEach(section => observer.observe(section));
+    }, 1500);
 
     const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollHeight = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
       const scrolled = (window.scrollY / scrollHeight) * 100;
       if (scrolled > maxScroll.current) {
         maxScroll.current = Math.min(Math.round(scrolled), 100);
@@ -110,9 +150,7 @@ export default function AnalyticsTracker() {
         if (sectionEl) {
           const rect = sectionEl.getBoundingClientRect();
           const sectionHeight = rect.height;
-          // Calculate how much of the section is scrolled past
           const scrolledPast = Math.max(0, -rect.top);
-          // Calculate percentage based on visible viewport height against section height
           const percentage = Math.min(100, Math.round(((scrolledPast + window.innerHeight) / sectionHeight) * 100));
           const currentMax = sectionScrolls.get(activeSection) || 0;
           if (percentage > currentMax) {
@@ -127,7 +165,6 @@ export default function AnalyticsTracker() {
     const trackExit = () => {
       const timeSpent = Math.round((Date.now() - viewStartTime.current) / 1000);
       
-      // Flush active section
       if (activeSection && sectionTimers.has(activeSection)) {
         const duration = Math.round((Date.now() - sectionTimers.get(activeSection)!) / 1000);
         const scrollDepth = sectionScrolls.get(activeSection) || 0;
@@ -147,7 +184,6 @@ export default function AnalyticsTracker() {
         scroll_depth: maxScroll.current,
         type: 'page_exit'
       });
-      // Use keepalive to ensure it fires when unloading
       fetch('/api/telemetry/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,31 +194,40 @@ export default function AnalyticsTracker() {
     };
 
     window.addEventListener('beforeunload', trackExit);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+         trackExit();
+      } else {
+         viewStartTime.current = Date.now();
+      }
+    });
 
-    // Initial view
-    const timer = setTimeout(trackView, 1000);
+    // Initial view tracking
+    trackTimer.current = setTimeout(trackView, 500);
     
-    // Heartbeat ping
-    const pingInterval = setInterval(() => {
-      fetch('/api/telemetry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          path: pathname,
-          type: 'ping'
-        }),
-        keepalive: true
-      }).catch(() => {});
-    }, 15000); // 15s heartbeat
+    // Heartbeat ping (only when visible)
+    pingInterval.current = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetch('/api/telemetry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            path: pathname,
+            type: 'ping'
+          }),
+          keepalive: true
+        }).catch(() => {});
+      }
+    }, 15000);
 
     return () => {
-      clearTimeout(timer);
-      clearInterval(pingInterval);
+      if (trackTimer.current) clearTimeout(trackTimer.current);
+      if (pingInterval.current) clearInterval(pingInterval.current);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('beforeunload', trackExit);
       observer.disconnect();
-      trackExit(); // also track on route change
+      trackExit();
     };
 
   }, [pathname, searchParams]);
@@ -192,8 +237,6 @@ export default function AnalyticsTracker() {
     if (typeof window !== 'undefined') {
       import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
         (window as unknown as { trackEvent: (eventType: string, eventName: string, eventData?: Record<string, unknown>) => void }).trackEvent = (eventType: string, eventName: string, eventData: Record<string, unknown> = {}) => {
-          // Backward compatibility for terminal using trackEvent directly via window
-          // We map it to the new engine
           let type = eventType;
           if (eventType === 'terminal_command') type = TELEMETRY_EVENTS.TERMINAL_COMMAND;
           

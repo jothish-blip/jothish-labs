@@ -26,8 +26,8 @@ export async function checkMfaStatus() {
   if (!session) return { error: 'Session expired' };
 
   const factors = await supabase.auth.mfa.listFactors();
-  const totpFactors = factors.data?.totp ?? [];
-  const verifiedFactors = totpFactors.filter(f => f.status === 'verified');
+  const allFactors = factors.data?.all || [];
+  const verifiedFactors = allFactors.filter(f => f.status === 'verified');
   
   return { isEnrolled: verifiedFactors.length > 0 };
 }
@@ -37,20 +37,30 @@ export async function enrollMfa() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { error: 'Session expired' };
 
-  // First check if an unverified factor already exists so we don't spam create
+  // Unenroll ALL existing unverified factors to prevent orphaned factors from Strict Mode
   const factors = await supabase.auth.mfa.listFactors();
-  const unverified = factors.data?.totp?.find(f => (f as unknown as { status: string }).status === 'unverified');
+  const allFactors = factors.data?.all || [];
+  const unverifiedFactors = allFactors.filter(f => f.status === 'unverified');
   
-  if (unverified) {
-    // If one exists, unenroll it so we can generate a fresh QR code
-    await supabase.auth.mfa.unenroll({ factorId: unverified.id });
+  for (const f of unverifiedFactors) {
+    await supabase.auth.mfa.unenroll({ factorId: f.id });
   }
 
-  const friendlyName = `Admin Authenticator ${Date.now()}`;
-  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName });
+  const friendlyName = `Admin_${Date.now()}`;
+  const { data, error } = await supabase.auth.mfa.enroll({ 
+    factorType: 'totp', 
+    issuer: 'Jothish_SOC',
+    friendlyName 
+  });
+  
   if (error) return { error: error.message };
 
-  return { factorId: data.id, qrCode: data.totp.qr_code, secret: data.totp.secret };
+  return { 
+    factorId: data.id, 
+    qrCode: data.totp.qr_code, 
+    secret: data.totp.secret,
+    uri: data.totp.uri 
+  };
 }
 
 export async function verifyMfa(formData: FormData) {
@@ -63,7 +73,11 @@ export async function verifyMfa(formData: FormData) {
 
   const factors = await supabase.auth.mfa.listFactors();
   const enrollment = factors.data?.all ?? [];
-  const defaultFactor = enrollment[0];
+  
+  // Target unverified factor if enrolling, otherwise target the verified factor
+  const unverifiedFactor = enrollment.find(f => f.status === 'unverified');
+  const verifiedFactor = enrollment.find(f => f.status === 'verified');
+  const defaultFactor = unverifiedFactor || verifiedFactor;
 
   if (!defaultFactor) {
     return { error: 'No MFA factor found. Please reload to enroll.' };

@@ -84,27 +84,57 @@ export default function OpsDashboardClient({
 
   // Supabase Real-time Subscription for Live Feed
   useEffect(() => {
-    const channelName = `live-telemetry-${crypto.randomUUID()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'portfolio_events' },
-        (payload) => {
-          const newEvent = payload.new as TelemetryEvent;
-          setLiveEventsFeed(prev => [newEvent, ...prev].slice(0, 50));
+    let retryCount = 0;
+    const maxRetries = 5;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let isComponentMounted = true;
+    
+    const connectChannel = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      
+      const channelName = `live-telemetry-feed`;
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'portfolio_events' },
+          (payload) => {
+            if (isComponentMounted) {
+              const newEvent = payload.new as TelemetryEvent;
+              setLiveEventsFeed(prev => [newEvent, ...prev].slice(0, 50));
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' },
+          (payload) => {
+            // handle admin logs if needed
+          }
+        );
+        
+      channel.subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          retryCount = 0;
         }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' },
-        (payload) => {
+        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          if (isComponentMounted && retryCount < maxRetries) {
+            retryCount++;
+            setTimeout(() => {
+              if (isComponentMounted) connectChannel();
+            }, 2000 * retryCount);
+          }
         }
-      )
-      .subscribe();
+      });
+    };
+
+    connectChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isComponentMounted = false;
+      if (channel) supabase.removeChannel(channel);
     };
   }, [supabase]);
 
@@ -304,7 +334,7 @@ export default function OpsDashboardClient({
                           </span>
                         </div>
                         <p className="text-[10px] text-muted font-mono mt-1">
-                          {(e.event_data?.command as string) || (e.metadata?.project as string) || (e.metadata?.certificate as string) || e.event_type}
+                          {(e.event_data?.command as string) || (e.event_data?.project as string) || (e.event_data?.certificate as string) || e.event_type}
                         </p>
                       </div>
                     </motion.li>
