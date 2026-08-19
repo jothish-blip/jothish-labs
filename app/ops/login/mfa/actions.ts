@@ -88,5 +88,21 @@ export async function verifyMfa(formData: FormData) {
     return { error: verification.error.message };
   }
 
+  // Insert session
+  const supabaseAdmin = await createClient(); // assuming elevated client if needed, or just standard if RLS allows
+  const sessionToken = session.access_token;
+  
+  await supabaseAdmin.from('portfolio_admin_sessions').insert({
+    admin_id: session.user.id,
+    session_token: sessionToken,
+    ip_address: 'MFA Verified',
+    country: 'Unknown',
+    browser: 'Unknown',
+    device: 'Unknown',
+    os: 'Unknown',
+    current_page: '/ops',
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  });
+
   redirect('/ops');
 }

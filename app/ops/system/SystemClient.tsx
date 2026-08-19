@@ -14,6 +14,8 @@ type Props = {
   nodeEnv: string;
   nextVersion: string;
   reactVersion: string;
+  initialMemoryUsage?: number;
+  initialCpuUsage?: number;
 };
 
 export default function SystemClient({ 
@@ -25,16 +27,18 @@ export default function SystemClient({
   telemetryStatus,
   nodeEnv, 
   nextVersion, 
-  reactVersion 
+  reactVersion,
+  initialMemoryUsage = 48,
+  initialCpuUsage = 24
 }: Props) {
-  // Simulate active chart data
-  const [cpuUsage, setCpuUsage] = useState(24);
-  const [memoryUsage, setMemoryUsage] = useState(48);
+  // Simulate active chart data fluttering around the real node values
+  const [cpuUsage, setCpuUsage] = useState(initialCpuUsage);
+  const [memoryUsage, setMemoryUsage] = useState(initialMemoryUsage);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCpuUsage(prev => Math.min(100, Math.max(10, prev + (Math.random() * 10 - 5))));
-      setMemoryUsage(prev => Math.min(100, Math.max(20, prev + (Math.random() * 6 - 3))));
+      setCpuUsage(prev => Math.min(100, Math.max(0, initialCpuUsage + (Math.random() * 4 - 2))));
+      setMemoryUsage(prev => Math.min(100, Math.max(0, initialMemoryUsage + (Math.random() * 2 - 1))));
     }, 3000);
     return () => clearInterval(interval);
   }, []);

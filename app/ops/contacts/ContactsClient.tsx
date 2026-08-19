@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
-import { Search, Archive, CheckCircle, Trash2, Activity, MapPin, Globe, Mail, Fingerprint } from 'lucide-react';
+import { Search, Archive, CheckCircle, Trash2, Activity, MapPin, Globe, Mail, Fingerprint, Reply, ShieldAlert, Star, Box, Award, Clock } from 'lucide-react';
 import { ContactWithVisitor } from './page';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
 
 export default function ContactsClient({ initialContacts }: { initialContacts: ContactWithVisitor[] }) {
   const [contacts, setContacts] = useState<ContactWithVisitor[]>(initialContacts);
@@ -22,6 +24,27 @@ export default function ContactsClient({ initialContacts }: { initialContacts: C
   });
 
   const selectedContact = contacts.find(c => c.id === selectedId);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channelName = `contacts-channel-${crypto.randomUUID()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolio_contacts' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setContacts(prev => [{ ...payload.new, visitor: null } as any, ...prev]);
+        } else if (payload.eventType === 'UPDATE') {
+          setContacts(prev => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } : c));
+        } else if (payload.eventType === 'DELETE') {
+          setContacts(prev => prev.filter(c => c.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const updateContact = async (id: string, updates: Partial<ContactWithVisitor>) => {
     setLoadingAction(id);
@@ -47,6 +70,12 @@ export default function ContactsClient({ initialContacts }: { initialContacts: C
       case 'archived': return 'bg-amber-500 text-amber-500 border-amber-500/30';
       default: return 'bg-emerald-500 text-emerald-500 border-emerald-500/30';
     }
+  };
+
+  const constructMailto = (c: ContactWithVisitor) => {
+    const subject = encodeURIComponent(`Re: ${c.intent} - ${c.context_info || 'Inquiry'} (Ref: ${c.id.split('-')[0]})`);
+    const body = encodeURIComponent(`\n\n\n--- Original Message ---\nFrom: ${c.name} <${c.email}>\nDate: ${format(new Date(c.created_at), 'PPPppp')}\n\n${c.message}`);
+    return `mailto:${c.email}?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -126,19 +155,33 @@ export default function ContactsClient({ initialContacts }: { initialContacts: C
               className="flex flex-col h-full overflow-y-auto custom-scrollbar"
             >
               {/* Header Actions */}
-              <div className="p-4 border-b border-surface flex justify-between items-center bg-surface/5 sticky top-0 z-10 shrink-0">
+              <div className="p-4 border-b border-surface flex flex-wrap gap-2 justify-between items-center bg-surface/5 sticky top-0 z-10 shrink-0">
                 <div className="flex items-center gap-3">
                   <span className={`w-2 h-2 rounded-full ${getStatusColor(selectedContact.status).replace('text-', 'bg-').split(' ')[0]}`}></span>
                   <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-foreground">{selectedContact.status} Message</span>
                 </div>
-                <div className="flex gap-2">
-                  {selectedContact.status === 'unread' && (
+                <div className="flex flex-wrap gap-2">
+                  <a 
+                    href={constructMailto(selectedContact)}
+                    className="flex items-center gap-2 text-[9px] font-mono text-background bg-foreground hover:bg-foreground/80 tracking-[0.1em] uppercase border border-transparent px-3 py-1.5 rounded-sm transition-colors"
+                  >
+                    <Reply size={10} /> Reply
+                  </a>
+                  {selectedContact.status === 'unread' ? (
                     <button 
                       onClick={() => updateContact(selectedContact.id, { status: 'read' })}
                       disabled={loadingAction === selectedContact.id}
                       className="flex items-center gap-2 text-[9px] font-mono text-foreground hover:bg-emerald-500/10 hover:text-emerald-500 hover:border-emerald-500/30 tracking-[0.1em] uppercase border border-surface px-3 py-1.5 rounded-sm transition-colors"
                     >
                       <CheckCircle size={10} /> Mark Read
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => updateContact(selectedContact.id, { status: 'unread' })}
+                      disabled={loadingAction === selectedContact.id}
+                      className="flex items-center gap-2 text-[9px] font-mono text-foreground hover:bg-amber-500/10 hover:text-amber-500 hover:border-amber-500/30 tracking-[0.1em] uppercase border border-surface px-3 py-1.5 rounded-sm transition-colors"
+                    >
+                      <Mail size={10} /> Mark Unread
                     </button>
                   )}
                   {selectedContact.status === 'archived' ? (
@@ -210,15 +253,27 @@ export default function ContactsClient({ initialContacts }: { initialContacts: C
                 <div className="prose prose-invert max-w-none text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">
                   {selectedContact.message}
                 </div>
+                
+                {/* Internal Notes */}
+                <div className="mt-8 pt-6 border-t border-surface border-dashed">
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-muted mb-2 flex items-center gap-2"><Star size={10}/> Internal Notes</p>
+                  <textarea 
+                    className="w-full bg-surface/5 border border-surface rounded-sm p-3 text-xs font-mono text-foreground focus:outline-none focus:border-surface-strong"
+                    placeholder="Add private notes about this contact..."
+                    rows={3}
+                    defaultValue={selectedContact.notes || ''}
+                    onBlur={(e) => updateContact(selectedContact.id, { notes: e.target.value })}
+                  />
+                </div>
               </div>
 
               {/* Visitor Intelligence Card */}
               {selectedContact.visitor ? (
                 <div className="bg-surface/5 border-t border-surface p-6 shrink-0">
                   <h3 className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted mb-4 flex items-center gap-2">
-                    <Fingerprint size={12} className="text-emerald-500" /> Visitor Context Correlated
+                    <Fingerprint size={12} className="text-emerald-500" /> Advanced Telemetry Context
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
                     <div className="space-y-1">
                       <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5"><MapPin size={10}/> Location</p>
                       <p className="text-xs font-mono text-foreground truncate" title={`${selectedContact.visitor.city}, ${selectedContact.visitor.country}`}>
@@ -232,23 +287,45 @@ export default function ContactsClient({ initialContacts }: { initialContacts: C
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5"><Activity size={10}/> Engagement</p>
-                      <p className="text-xs font-mono text-foreground">
-                        {selectedContact.visitor.total_visits} Total Visits
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5"><Activity size={10}/> Source</p>
+                      <p className="text-xs font-mono text-foreground truncate" title={selectedContact.visitor.referrer}>
+                        {selectedContact.visitor.source || 'Direct'}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5"><Fingerprint size={10}/> IP Address</p>
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5"><Clock size={10}/> Session Time</p>
                       <p className="text-xs font-mono text-foreground">
-                        {/* @ts-expect-error public_ip exists on visitor */}
-                        {selectedContact.visitor.public_ip || 'Unknown'}
+                        {selectedContact.visitor.time_on_site}s
                       </p>
                     </div>
                   </div>
-                  <div className="mt-4 pt-4 border-t border-surface/50">
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="bg-background border border-surface p-3 rounded-sm">
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5 mb-2"><Box size={10}/> Projects Viewed</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedContact.visitor.projects_viewed && selectedContact.visitor.projects_viewed.length > 0 ? (
+                          selectedContact.visitor.projects_viewed.map(p => <span key={p} className="text-[9px] font-mono bg-surface px-1.5 py-0.5 rounded-sm">{p}</span>)
+                        ) : <span className="text-[9px] font-mono text-muted">None</span>}
+                      </div>
+                    </div>
+                    <div className="bg-background border border-surface p-3 rounded-sm">
+                      <p className="text-[9px] font-mono uppercase tracking-widest text-muted flex items-center gap-1.5 mb-2"><Award size={10}/> Certs Viewed</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedContact.visitor.certs_viewed && selectedContact.visitor.certs_viewed.length > 0 ? (
+                          selectedContact.visitor.certs_viewed.map(c => <span key={c} className="text-[9px] font-mono bg-surface px-1.5 py-0.5 rounded-sm">{c}</span>)
+                        ) : <span className="text-[9px] font-mono text-muted">None</span>}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-surface/50 flex justify-between items-center">
                     <p className="text-[8px] font-mono uppercase tracking-widest text-muted">
-                      Visitor ID: {selectedContact.visitor.visitor_id}
+                      Visitor ID: {selectedContact.visitor.visitor_id} • IP: {selectedContact.visitor.public_ip}
                     </p>
+                    <button className="text-[9px] font-mono uppercase tracking-widest text-[#E4002B] hover:underline flex items-center gap-1">
+                      <ShieldAlert size={10} /> Block IP
+                    </button>
                   </div>
                 </div>
               ) : (

@@ -8,6 +8,7 @@ import {
   ArrowLeftRight, Search, Mail, Eye
 } from 'lucide-react';
 import { VscLoading } from 'react-icons/vsc';
+import SessionDossier from './SessionDossier';
 
 type DossierData = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,6 +25,10 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
   const [data, setData] = useState<DossierData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedSession, setSelectedSession] = useState<any | null>(null);
+
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blocking, setBlocking] = useState(false);
 
   useEffect(() => {
     async function fetchDossier() {
@@ -32,7 +37,7 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
         if (!res.ok) throw new Error('Failed to fetch dossier');
         const json = await res.json();
         setData(json);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setIsBlocked(json.isBlocked);
       } catch (e: any) {
         setError(e.message);
       } finally {
@@ -41,6 +46,22 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
     }
     fetchDossier();
   }, [visitorId]);
+
+  const handleBlockToggle = async () => {
+    setBlocking(true);
+    try {
+      const res = await fetch(`/api/ops/visitors/${visitorId}/block`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: isBlocked ? 'unblock' : 'block' })
+      });
+      if (res.ok) setIsBlocked(!isBlocked);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBlocking(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -59,13 +80,19 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
     );
   }
 
-  const { visitor, sessions, pageViews, events } = data;
+  if (selectedSession) {
+    return (
+      <SessionDossier
+        session={selectedSession}
+        visitor={data.visitor}
+        pageViews={data.pageViews}
+        events={data.events}
+        onBack={() => setSelectedSession(null)}
+      />
+    );
+  }
 
-  // Combine Page Views and Events into a single Forensic Timeline
-  const timeline = [
-    ...pageViews.map(pv => ({ type: 'page_view', time: new Date(pv.created_at), data: pv })),
-    ...events.map(ev => ({ type: 'event', time: new Date(ev.created_at), data: ev }))
-  ].sort((a, b) => b.time.getTime() - a.time.getTime()); // Newest first
+  const { visitor, sessions, pageViews, events } = data;
 
   // Categorized Data for Panels
   const projectsViewed = events.filter(e => e.event_type === 'PROJECT_OPEN');
@@ -73,6 +100,58 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
   const certsViewed = events.filter(e => e.event_type === 'CERTIFICATE_OPEN' || e.event_type === 'CERTIFICATE_VERIFY');
   const resumeActivity = events.filter(e => e.event_type === 'RESUME_VIEW' || e.event_type === 'RESUME_DOWNLOAD');
   const contacts = events.filter(e => e.event_type === 'CONTACT_SUBMIT');
+
+  // Compute average session duration
+  const now = Date.now();
+  
+  // Calculate dynamic duration for active sessions or fix negative historical ones
+  const dynamicSessions = sessions.map(s => {
+    let dur = (s as any).total_duration || s.duration || 0;
+    const isOnline = now - new Date(s.updated_at || s.created_at).getTime() < 5 * 60 * 1000;
+    
+    // If online, duration is running. If historical and negative, fix it.
+    if (isOnline) {
+      dur = Math.max(dur, Math.round((now - new Date(s.created_at).getTime()) / 1000));
+    } else {
+      dur = Math.max(0, dur);
+    }
+
+    // Determine Entry/Exit sections precisely from events for historical accuracy
+    const sessionEvents = events.filter(e => e.session_id === s.session_id);
+    const sectionEnters = sessionEvents.filter(e => ['SECTION_ENTER', 'ABOUT_ENTER', 'GOOGLE_SECTION_ENTER', 'COMPTIA_SECTION_ENTER', 'IDENTITY_ENTER', 'FOCUS_ENTER'].includes(e.event_type));
+    
+    let computedEntry = s.entry_page;
+    let computedExit = s.exit_page;
+    
+    if (computedEntry === '/' || !computedEntry) {
+      computedEntry = sectionEnters.length > 0 
+        ? (sectionEnters[0].event_data?.section || sectionEnters[0].event_name) 
+        : 'Unknown';
+    }
+    if (computedExit === '/' || !computedExit) {
+      const sectionEventsAll = sessionEvents.filter(e => e.event_type.includes('SECTION_') || e.event_type.includes('ENTER') || e.event_type.includes('EXIT'));
+      computedExit = sectionEventsAll.length > 0 
+        ? (sectionEventsAll[sectionEventsAll.length - 1].event_data?.section || sectionEventsAll[sectionEventsAll.length - 1].event_name) 
+        : 'Unknown';
+    }
+
+    return { ...s, _duration: dur, _isOnline: isOnline, _entry: computedEntry, _exit: computedExit, _sessionEvents: sessionEvents };
+  });
+
+  const durations = dynamicSessions.map(s => s._duration);
+  const totalDuration = durations.reduce((a,b) => a+b, 0);
+  const avgDuration = durations.length > 0 ? Math.round(totalDuration / durations.length) : 0;
+  const longestSession = durations.length > 0 ? Math.max(...durations) : 0;
+  const shortestSession = durations.length > 0 ? Math.min(...durations) : 0;
+  const bouncedSessions = dynamicSessions.filter(s => s.bounced || (s._duration < 10)).length;
+  const bounceRate = dynamicSessions.length > 0 ? Math.round((bouncedSessions / dynamicSessions.length) * 100) : 0;
+
+  const formatTime = (secs: number) => {
+    if (secs === 0) return '0s';
+    if (secs > 3600) return `${Math.floor(secs / 3600)}h ${Math.floor((secs % 3600) / 60)}m`;
+    if (secs > 60) return `${Math.floor(secs / 60)}m ${secs % 60}s`;
+    return `${secs}s`;
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -93,12 +172,26 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
               Profile Generated: {format(new Date(), 'HH:mm:ss')}
             </p>
           </div>
-          <div className={`px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border ${
-             new Date().getTime() - new Date(visitor.last_visit).getTime() < 5 * 60 * 1000 
-               ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' 
-               : 'bg-surface/30 text-muted border-surface-strong'
-          }`}>
-            {new Date().getTime() - new Date(visitor.last_visit).getTime() < 5 * 60 * 1000 ? '● ONLINE' : 'OFFLINE'}
+          <div className="flex gap-2">
+            <button
+              onClick={handleBlockToggle}
+              disabled={blocking}
+              className={`px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border transition-colors ${
+                isBlocked 
+                  ? 'bg-[#E4002B]/10 text-[#E4002B] border-[#E4002B]/30 hover:bg-[#E4002B]/20'
+                  : 'bg-surface/30 text-muted border-surface-strong hover:bg-surface/50 hover:text-foreground'
+              }`}
+            >
+              <Shield size={10} className="inline-block mr-1 -mt-0.5" />
+              {blocking ? 'Processing...' : isBlocked ? 'Unblock Visitor' : 'Block Visitor'}
+            </button>
+            <div className={`px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border ${
+               new Date().getTime() - new Date(visitor.last_visit).getTime() < 5 * 60 * 1000 
+                 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' 
+                 : 'bg-surface/30 text-muted border-surface-strong'
+            }`}>
+              {new Date().getTime() - new Date(visitor.last_visit).getTime() < 5 * 60 * 1000 ? '● ONLINE' : 'OFFLINE'}
+            </div>
           </div>
         </div>
         
@@ -139,67 +232,50 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
           </div>
         </div>
 
-        {/* Feature Specific Data */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Projects & Code */}
-          <div className="border border-surface bg-background p-5 rounded-sm">
-            <h3 className="text-[10px] font-mono text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-              <LayoutDashboard size={12} /> Project Engagement
-            </h3>
-            {projectsViewed.length > 0 ? (
-              <ul className="space-y-2">
-                {projectsViewed.slice(0, 5).map(e => (
-                  <li key={e.id} className="text-xs font-mono text-foreground flex justify-between">
-                    <span className="truncate max-w-[150px]">{e.event_data?.certificate || e.event_data?.project || e.metadata?.project || 'Unknown Project'}</span>
-                    <span className="text-muted text-[9px]">{formatDistanceToNow(new Date(e.created_at))} ago</span>
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-[10px] text-muted/50 font-mono italic">No projects viewed.</p>}
-          </div>
-
-          {/* Terminal */}
-          <div className="border border-surface bg-background p-5 rounded-sm">
-            <h3 className="text-[10px] font-mono text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Terminal size={12} /> Terminal Commands
-            </h3>
-            {terminalCmds.length > 0 ? (
-              <div className="space-y-2">
-                {terminalCmds.slice(0, 5).map(e => (
-                  <div key={e.id} className="text-xs font-mono bg-surface/30 px-2 py-1 rounded-sm flex justify-between items-center border border-surface border-dashed">
-                    <span className="text-emerald-500">$ {e.event_data?.command || e.metadata?.command || e.event_name}</span>
-                  </div>
-                ))}
-              </div>
-            ) : <p className="text-[10px] text-muted/50 font-mono italic">No terminal interactions.</p>}
-          </div>
-
-          {/* Resume & Certs */}
-          <div className="border border-surface bg-background p-5 rounded-sm">
-            <h3 className="text-[10px] font-mono text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-              <FileText size={12} /> Professional Artifacts
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-muted">Resume Views:</span>
-                <span className="text-foreground">{resumeActivity.filter(r => r.event_type === 'RESUME_VIEW').length}</span>
-              </div>
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-muted">Resume Downloads:</span>
-                <span className="text-[#E4002B]">{resumeActivity.filter(r => r.event_type === 'RESUME_DOWNLOAD').length}</span>
-              </div>
-              <div className="flex justify-between text-xs font-mono">
-                <span className="text-muted">Certs Inspected:</span>
-                <span className="text-foreground">{certsViewed.length}</span>
-              </div>
-            </div>
-          </div>
+        {/* Aggregate Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 mb-8">
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Sessions</p>
+             <p className="text-lg font-mono text-foreground mt-1">{sessions.length}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm col-span-2 md:col-span-1">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Total Time</p>
+             <p className="text-lg font-mono text-foreground mt-1">{formatTime(totalDuration)}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Avg Time</p>
+             <p className="text-lg font-mono text-foreground mt-1">{formatTime(avgDuration)}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Longest</p>
+             <p className="text-lg font-mono text-foreground mt-1">{formatTime(longestSession)}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Shortest</p>
+             <p className="text-lg font-mono text-foreground mt-1">{formatTime(shortestSession)}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Projects</p>
+             <p className="text-lg font-mono text-foreground mt-1">{projectsViewed.length}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-muted uppercase font-mono tracking-widest">Certs</p>
+             <p className="text-lg font-mono text-foreground mt-1">{certsViewed.length}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-emerald-500 uppercase font-mono tracking-widest">Terminal</p>
+             <p className="text-lg font-mono text-emerald-500 mt-1">{terminalCmds.length}</p>
+           </div>
+           <div className="bg-background border border-surface p-3 rounded-sm">
+             <p className="text-[9px] text-emerald-500 uppercase font-mono tracking-widest">Contacts</p>
+             <p className="text-lg font-mono text-emerald-500 mt-1">{contacts.length}</p>
+           </div>
         </div>
 
         {/* Sessions & Exit Summary */}
         <div className="mb-8 border border-surface bg-background p-5 rounded-sm">
           <h3 className="text-[10px] font-mono text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
-            <ArrowLeftRight size={12} /> Session Summary & Exit Vectors
+            <ArrowLeftRight size={12} /> Session List (Select to investigate)
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs">
@@ -214,96 +290,41 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
                   <th className="px-3 py-2 font-normal text-right" title="Certificates Viewed">Cert</th>
                   <th className="px-3 py-2 font-normal text-right" title="Resume Downloads">Res</th>
                   <th className="px-3 py-2 font-normal text-right">Bounce</th>
+                  <th className="px-3 py-2 font-normal text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface text-foreground">
-                {sessions.map((s) => {
-                  const sessionEvents = events.filter(e => e.session_id === s.session_id);
-                  const projCount = sessionEvents.filter(e => e.event_type === 'PROJECT_OPEN').length;
-                  const certCount = sessionEvents.filter(e => e.event_type === 'CERTIFICATE_OPEN' || e.event_type === 'CERTIFICATE_VERIFY').length;
-                  const resCount = sessionEvents.filter(e => e.event_type === 'RESUME_DOWNLOAD').length;
+                {dynamicSessions.map((s) => {
+                  const projCount = s._sessionEvents.filter((e: any) => e.event_type === 'PROJECT_OPEN').length;
+                  const certCount = s._sessionEvents.filter((e: any) => e.event_type.includes('CERTIFICATE') || e.event_type.includes('GOOGLE_SPECIALIZATION')).length;
+                  const resCount = s._sessionEvents.filter((e: any) => e.event_type === 'RESUME_DOWNLOAD').length;
+                  const isBounce = s.bounced || (s._duration < 10);
                   return (
-                    <tr key={s.id}>
-                      <td className="px-3 py-2 text-muted">{s.session_id.substring(0,8)}...</td>
+                    <tr 
+                      key={s.id} 
+                      onClick={() => setSelectedSession(s)}
+                      className="hover:bg-surface/10 transition-colors cursor-pointer group"
+                    >
+                      <td className="px-3 py-2 text-muted group-hover:text-foreground">{s.session_id.substring(0,8)}...</td>
                       <td className="px-3 py-2">{format(new Date(s.created_at), 'MMM d, HH:mm')}</td>
-                      <td className="px-3 py-2 text-muted">{s.duration ? `${Math.floor(s.duration / 60)}m ${s.duration % 60}s` : 'Active'}</td>
-                      <td className="px-3 py-2 text-emerald-500/80">{s.entry_page}</td>
-                      <td className="px-3 py-2 text-[#E4002B]/80">{s.exit_page || 'Active'}</td>
+                      <td className="px-3 py-2 text-muted">
+                        {s._isOnline ? <span className="text-emerald-500 animate-pulse flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> {formatTime(s._duration)}</span> : formatTime(s._duration)}
+                      </td>
+                      <td className="px-3 py-2 text-emerald-500/80 max-w-[120px] truncate capitalize">{s._entry}</td>
+                      <td className="px-3 py-2 text-[#E4002B]/80 max-w-[120px] truncate capitalize">{s._isOnline ? 'Active' : s._exit}</td>
                       <td className="px-3 py-2 text-right">{projCount}</td>
                       <td className="px-3 py-2 text-right">{certCount}</td>
                       <td className="px-3 py-2 text-right">{resCount}</td>
-                      <td className="px-3 py-2 text-right">{s.bounced ? 'YES' : 'NO'}</td>
+                      <td className="px-3 py-2 text-right">{isBounce ? 'YES' : 'NO'}</td>
+                      <td className="px-3 py-2 text-center text-blue-400 group-hover:text-blue-300">
+                        <Eye size={14} className="inline-block" />
+                      </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Forensic Timeline */}
-        <div>
-          <h3 className="text-xs font-mono text-muted uppercase tracking-widest border-b border-surface pb-2 mb-6">
-            Forensic Event Timeline
-          </h3>
-          <div className="relative border-l border-surface-strong ml-3 space-y-6">
-            {timeline.slice(0, 50).map((item, i) => (
-              <div key={i} className="relative pl-6">
-                {item.type === 'page_view' ? (
-                  <>
-                    <div className="absolute left-[-4.5px] top-1.5 w-2 h-2 rounded-full bg-blue-500 ring-4 ring-background"></div>
-                    <p className="text-[10px] font-mono text-blue-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                      <Search size={10} /> PAGE VIEW
-                      <span className="text-muted/50 normal-case tracking-normal">{format(item.time, 'HH:mm:ss')}</span>
-                    </p>
-                    <p className="text-xs text-foreground font-mono bg-background border border-surface p-2 rounded-sm inline-block">
-                      {item.data.path}
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <div className="absolute left-[-4.5px] top-1.5 w-2 h-2 rounded-full bg-amber-500 ring-4 ring-background"></div>
-                    <p className="text-[10px] font-mono text-amber-500 uppercase tracking-widest mb-1 flex items-center gap-2">
-                      <Activity size={10} /> 
-                      {item.data.event_type === 'PROJECT_OPEN' && 'PROJECT VIEWED'}
-                      {item.data.event_type === 'CERTIFICATE_OPEN' && 'CERTIFICATE VIEWED'}
-                      {item.data.event_type === 'SECTION_VIEW' && 'SECTION VIEWED'}
-                      {item.data.event_type === 'RESUME_DOWNLOAD' && 'RESUME DOWNLOADED'}
-                      {item.data.event_type === 'RESUME_VIEW' && 'RESUME PREVIEWED'}
-                      {item.data.event_type === 'CONTACT_SUBMIT' && 'CONTACT SUBMITTED'}
-                      {item.data.event_type === 'TERMINAL_COMMAND' && 'TERMINAL USED'}
-                      {![
-                        'PROJECT_OPEN', 'CERTIFICATE_OPEN', 'SECTION_VIEW', 
-                        'RESUME_DOWNLOAD', 'RESUME_VIEW', 'CONTACT_SUBMIT', 'TERMINAL_COMMAND'
-                      ].includes(item.data.event_type) && item.data.event_type}
-                      
-                      <span className="text-muted/50 normal-case tracking-normal">{format(item.time, 'HH:mm:ss')}</span>
-                    </p>
-                    <div className="text-xs text-muted font-mono bg-background border border-surface p-2 rounded-sm inline-block">
-                      {item.data.event_type === 'PROJECT_OPEN' || item.data.event_type === 'PROJECT_CLOSE' ? (
-                        <span>Project: {item.data.event_data?.project || item.data.metadata?.project} {item.data.event_data?.duration_seconds ? `(${item.data.event_data.duration_seconds}s)` : ''}</span>
-                      ) : item.data.event_type === 'SECTION_VIEW' ? (
-                        <span>Section: {item.data.event_data?.section || item.data.metadata?.section} {item.data.event_data?.duration_seconds ? `(${item.data.event_data.duration_seconds}s)` : ''}</span>
-                      ) : item.data.event_type === 'CERTIFICATE_OPEN' || item.data.event_type === 'CERTIFICATE_CLOSE' ? (
-                        <span>Certificate: {item.data.event_data?.title || item.data.metadata?.title} {item.data.event_data?.duration_seconds ? `(${item.data.event_data.duration_seconds}s)` : ''}</span>
-                      ) : item.data.event_type === 'TERMINAL_COMMAND' ? (
-                        <span className="text-emerald-500">$ {item.data.event_data?.command || item.data.metadata?.command || item.data.event_name}</span>
-                      ) : Object.keys(item.data.event_data || {}).length > 0 || Object.keys(item.data.metadata || {}).length > 0 ? (
-                        <pre className="whitespace-pre-wrap">
-                          {JSON.stringify(item.data.event_data || item.data.metadata, null, 2)}
-                        </pre>
-                      ) : (
-                        <span>{item.data.event_name}</span>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-          {timeline.length > 50 && (
-            <p className="text-xs font-mono text-muted text-center mt-6">Showing most recent 50 events.</p>
-          )}
         </div>
 
       </div>

@@ -48,11 +48,23 @@ export async function GET(
       .eq('visitor_id', visitorId)
       .order('created_at', { ascending: false });
 
+    // Check if blocked
+    let isBlocked = false;
+    if (visitor.public_ip) {
+      const { data: blockedIp } = await supabase
+        .from('portfolio_blocked_ips')
+        .select('id')
+        .eq('ip_address', visitor.public_ip)
+        .single();
+      isBlocked = !!blockedIp;
+    }
+
     return NextResponse.json({
       visitor,
       sessions: sessions || [],
       pageViews: pageViews || [],
-      events: events || []
+      events: events || [],
+      isBlocked
     });
 
   } catch (error) {

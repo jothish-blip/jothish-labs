@@ -1,8 +1,21 @@
 import { createClient } from '@/utils/supabase/server';
 import SecurityClient from './SecurityClient';
+import os from 'os';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+export type SystemDetails = {
+  server: string;
+  os: string;
+  node: string;
+  runtime: string;
+  environment: string;
+  cpu: string;
+  memory: string;
+  uptime: string;
+  build: string;
+};
 
 export type SuspiciousActor = {
   visitorId: string;
@@ -121,6 +134,18 @@ export default async function OpsSecurity() {
     return sMap[b.severity] - sMap[a.severity];
   });
 
+  const systemDetails: SystemDetails = {
+    server: os.hostname(),
+    os: `${os.type()} ${os.release()} (${os.arch()})`,
+    node: process.version,
+    runtime: 'Node.js',
+    environment: process.env.NODE_ENV || 'production',
+    cpu: os.cpus()[0]?.model || 'Unknown CPU',
+    memory: `${Math.round(os.totalmem() / (1024 ** 3))}GB Total`,
+    uptime: `${Math.round(os.uptime() / 3600)} Hours`,
+    build: 'v2.1.0-stable'
+  };
+
   return (
     <SecurityClient 
       logs={logs || []}
@@ -130,6 +155,7 @@ export default async function OpsSecurity() {
       rlsEnabled={true} 
       failedLoginChains={failedChainsArray}
       suspiciousActors={suspiciousActors}
+      systemDetails={systemDetails}
     />
   );
 }

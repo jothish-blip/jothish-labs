@@ -1,0 +1,26 @@
+{
+  "name": "Jothish Gandham Portfolio",
+  "short_name": "Jothish",
+  "description": "Cybersecurity portfolio of Jothish Gandham showcasing SOC Operations, Threat Detection, Incident Response, SIEM, and Security Automation.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

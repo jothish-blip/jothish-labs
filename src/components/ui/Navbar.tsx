@@ -91,7 +91,7 @@ export default function Navbar() {
 
     // Track Theme Change
     trackEvent({
-      type: TELEMETRY_EVENTS.THEME_CHANGED,
+      type: TELEMETRY_EVENTS.THEME_CHANGE,
       metadata: { theme: newTheme }
     });
   };
@@ -212,7 +212,7 @@ export default function Navbar() {
         :root {
           --accent-hero: #6366f1;
           --accent-about: #52525b;
-          --accent-projects: #0891b2;
+          --accent-projects: #ca8a04; /* Yellow-600 */
           --accent-skills: #059669;
           --accent-terminal: #dc2626; /* Sleek Crimson Red */
           --accent-contact: #2563eb;
@@ -222,7 +222,7 @@ export default function Navbar() {
         html.dark {
           --accent-hero: #818cf8;
           --accent-about: #a1a1aa;
-          --accent-projects: #22d3ee;
+          --accent-projects: #fb923c; /* Glowing Neon Orange */
           --accent-skills: #34d399;
           --accent-terminal: #ef4444; /* High-Visibility Hacker Red */
           --accent-contact: #60a5fa;
@@ -295,7 +295,7 @@ export default function Navbar() {
 
           {/* ACTIVE SECTION SUB-LABEL: Visible on desktop and mobile when scrolled */}
           <div
-            className={`absolute top-full mt-2 md:mt-4 left-1/2 -translate-x-1/2 text-[10px] font-mono tracking-widest uppercase transition-all duration-500 ease-out pointer-events-none font-semibold ${
+            className={`absolute top-full mt-6 md:mt-4 left-1/2 -translate-x-1/2 text-[10px] font-mono tracking-widest uppercase transition-all duration-500 ease-out pointer-events-none font-semibold ${
               scrolled ? "opacity-100" : "opacity-0 md:opacity-100"
             }`}
             style={{ 
@@ -530,7 +530,7 @@ export default function Navbar() {
             </a>
 
             <a
-              href="/Jothish_Gandham_Cybersecurity_Resume.pdf"
+              href="/GANDHAM_JOTHISH_Resume.pdf"
               download
               className="block w-full text-center px-4 py-3.5 border border-surface bg-surface/20 hover:bg-surface text-foreground text-[10px] font-mono uppercase tracking-[0.24em] transition-all rounded-sm"
               onClick={() => setShowResumeOptions(false)}

@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 import pkg from '../../../package.json';
 
+import os from 'os';
+
 export default async function OpsSystem() {
   const supabase = await createClient();
   
@@ -25,17 +27,30 @@ export default async function OpsSystem() {
   const { error: storageError } = await supabase.storage.listBuckets();
   const storageStatus = storageError ? 'Degraded' : 'Healthy';
 
-  // Telemetry Status (Can we query portfolio_events?)
+  // Telemetry Status
   const { error: telError } = await supabase.from('portfolio_events').select('id').limit(1);
   const telemetryStatus = telError ? 'Degraded' : 'Healthy';
 
-  // API Status (Assuming Edge function is running if this page renders)
+  // API Status
   const apiStatus = 'Healthy'; 
 
-  // Next and React version from package.json dependencies
+  // Next and React version from package.json
   const nextVersion = (pkg.dependencies as Record<string, string>)?.next || 'Unknown';
   const reactVersion = (pkg.dependencies as Record<string, string>)?.react || 'Unknown';
   
+  // Real OS Stats
+  const totalMem = os.totalmem();
+  const freeMem = os.freemem();
+  const memoryUsage = ((totalMem - freeMem) / totalMem) * 100;
+  
+  // Load average on Windows is mostly 0, but we'll use it
+  const cpus = os.cpus();
+  let cpuUsage = 0;
+  if (cpus && cpus.length > 0) {
+     const load = os.loadavg()[0]; // 1 minute load average
+     cpuUsage = Math.min((load / cpus.length) * 100, 100);
+  }
+
   return (
     <SystemClient 
       dbStatus={dbStatus}
@@ -47,6 +62,8 @@ export default async function OpsSystem() {
       nodeEnv={process.env.NODE_ENV || 'development'}
       nextVersion={nextVersion}
       reactVersion={reactVersion}
+      initialMemoryUsage={memoryUsage}
+      initialCpuUsage={cpuUsage}
     />
   );
 }

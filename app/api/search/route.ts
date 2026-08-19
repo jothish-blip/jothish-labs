@@ -27,7 +27,9 @@ export async function GET(request: Request) {
       { data: contacts },
       { data: visitors },
       { data: events },
-      { data: logs }
+      { data: logs },
+      { data: sessions },
+      { data: rateLimits }
     ] = await Promise.all([
       // 1. Contacts
       supabaseAdmin
@@ -55,6 +57,20 @@ export async function GET(request: Request) {
         .from('portfolio_audit_logs')
         .select('id, action, actor, resource_type, created_at')
         .or(`actor.ilike.${ilikeQuery},action.ilike.${ilikeQuery},resource_type.ilike.${ilikeQuery}`)
+        .limit(5),
+        
+      // 5. Admin Sessions
+      supabaseAdmin
+        .from('portfolio_admin_sessions')
+        .select('id, admin_id, ip_address, browser, os, started_at')
+        .or(`admin_id.ilike.${ilikeQuery},ip_address.ilike.${ilikeQuery}`)
+        .limit(5),
+
+      // 6. Rate Limits
+      supabaseAdmin
+        .from('portfolio_rate_limits')
+        .select('ip_address, reason, updated_at')
+        .or(`ip_address.ilike.${ilikeQuery},reason.ilike.${ilikeQuery}`)
         .limit(5)
     ]);
 
@@ -111,6 +127,34 @@ export async function GET(request: Request) {
           metadata: `Resource: ${l.resource_type}`,
           href: '/ops/audit',
           timestamp: l.created_at
+        });
+      });
+    }
+
+    if (sessions) {
+      sessions.forEach(s => {
+        results.push({
+          id: s.id,
+          type: 'session',
+          title: s.admin_id,
+          subtitle: `Session from ${s.ip_address}`,
+          metadata: `${s.browser} on ${s.os}`,
+          href: '/ops/auth/sessions',
+          timestamp: s.started_at
+        });
+      });
+    }
+
+    if (rateLimits) {
+      rateLimits.forEach(r => {
+        results.push({
+          id: r.ip_address,
+          type: 'rate-limit',
+          title: r.ip_address,
+          subtitle: r.reason || 'Blocked IP',
+          metadata: 'Rate Limit',
+          href: '/ops/auth/rate-limits',
+          timestamp: r.updated_at
         });
       });
     }

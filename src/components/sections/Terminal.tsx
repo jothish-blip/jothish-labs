@@ -178,12 +178,35 @@ export default function Terminal() {
     
     setHistory((prev) => [...prev, { command: currentInput, output: "processing...", isRoot }]);
     
+    const startTime = Date.now();
+    const result = handleCommand(currentInput);
+    const duration = Date.now() - startTime;
+    
+    // Determine success/failure based on result
+    let success = true;
+    let outputPreview = "";
+    if (result === "__CLEAR__") outputPreview = "clear";
+    else if (result === "__EXIT__") outputPreview = "exit";
+    else if (typeof result === "string") {
+      outputPreview = result.substring(0, 50);
+      if (result.includes("Unknown command") || result.includes("usage:") || result.includes("Permission denied")) {
+        success = false;
+      }
+    } else {
+      outputPreview = "multiline output";
+    }
+
     trackEvent({
       type: TELEMETRY_EVENTS.TERMINAL_COMMAND,
-      metadata: { command: currentInput.split(' ')[0], raw: currentInput }
+      metadata: { 
+        command: currentInput.split(' ')[0], 
+        raw: currentInput,
+        success: success,
+        duration_ms: duration,
+        result: outputPreview
+      }
     });
     
-    const result = handleCommand(currentInput);
     setIsRoot(state.isRoot);
 
     if (result === "__CLEAR__") { setHistory([]); return; }

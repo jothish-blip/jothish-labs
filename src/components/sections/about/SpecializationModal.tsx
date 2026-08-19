@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import React, { Fragment, useState, useEffect } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useScrollLock } from "@/hooks/useScrollLock";
 import { X, ExternalLink, ShieldCheck, GraduationCap, Calendar, CheckCircle2, ChevronRight, Layers, Target, BookOpen, Briefcase } from "lucide-react";
@@ -34,6 +34,7 @@ export default function SpecializationModal({
   onClose,
 }: Props) {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const courseStartTimeRef = React.useRef<number>(0);
 
   // Reset course state when opening fresh
   useEffect(() => {
@@ -47,15 +48,33 @@ export default function SpecializationModal({
   useEffect(() => {
     if (!open || !specialization) return;
     const startTime = Date.now();
+    trackEvent({ type: TELEMETRY_EVENTS.GOOGLE_SPECIALIZATION_OPEN, metadata: { title: specialization.title } });
 
     return () => {
       const durationSeconds = Math.round((Date.now() - startTime) / 1000);
       trackEvent({
-        type: 'CERTIFICATE_CLOSE' as keyof typeof TELEMETRY_EVENTS,
+        type: TELEMETRY_EVENTS.GOOGLE_SPECIALIZATION_CLOSE,
         metadata: { title: specialization.title, duration_seconds: durationSeconds }
       });
     };
   }, [open, specialization]);
+
+  const selectedCourse = specialization?.courses.find(c => c.id === selectedCourseId) || specialization?.courses[0] || null;
+
+  // Track course view duration
+  useEffect(() => {
+    if (!selectedCourse) return;
+    courseStartTimeRef.current = Date.now();
+    trackEvent({ type: TELEMETRY_EVENTS.GOOGLE_COURSE_OPEN, metadata: { course: selectedCourse.title, specialization: specialization?.title } });
+
+    return () => {
+      const durationSeconds = Math.round((Date.now() - courseStartTimeRef.current) / 1000);
+      trackEvent({
+        type: TELEMETRY_EVENTS.GOOGLE_COURSE_CLOSE,
+        metadata: { course: selectedCourse.title, specialization: specialization?.title, duration_seconds: durationSeconds }
+      });
+    };
+  }, [selectedCourse, specialization?.title]);
 
   // Safe body scroll lock
   useScrollLock(open);
@@ -70,8 +89,6 @@ export default function SpecializationModal({
       }, 100);
     }
   };
-
-  const selectedCourse = specialization?.courses.find(c => c.id === selectedCourseId) || specialization?.courses[0] || null;
 
   return (
     <>
@@ -209,7 +226,7 @@ export default function SpecializationModal({
                                   href={specialization.professionalCertificate.credentialUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  onClick={() => trackEvent({ type: TELEMETRY_EVENTS.CERTIFICATE_VERIFY, metadata: { type: 'certificate', title: specialization.title }})}
+                                  onClick={() => trackEvent({ type: TELEMETRY_EVENTS.GOOGLE_VERIFY_CLICK, metadata: { type: 'certificate', title: specialization.title }})}
                                   className="spec-modal-btn inline-flex items-center justify-center gap-1.5 rounded-sm border border-surface bg-surface/20 px-3 py-2 text-[9px] font-mono uppercase tracking-[0.24em] text-foreground transition-all"
                                 >
                                   View Credential
@@ -249,7 +266,7 @@ export default function SpecializationModal({
                                   href={specialization.credlyBadge.badgeUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  onClick={() => trackEvent({ type: TELEMETRY_EVENTS.CERTIFICATE_VERIFY, metadata: { type: 'badge', title: specialization.title }})}
+                                  onClick={() => trackEvent({ type: TELEMETRY_EVENTS.GOOGLE_VERIFY_CLICK, metadata: { type: 'badge', title: specialization.title }})}
                                   className="inline-flex items-center justify-center gap-1.5 text-[9px] font-mono uppercase tracking-[0.24em] transition-colors hover:opacity-80"
                                   style={{ color: 'var(--accent-about)' }}
                                 >
@@ -419,7 +436,7 @@ export default function SpecializationModal({
                                       href={selectedCourse.credentialUrl}
                                       target="_blank"
                                       rel="noreferrer"
-                                      onClick={() => trackEvent({ type: TELEMETRY_EVENTS.CERTIFICATE_VERIFY, metadata: { type: 'course', title: selectedCourse.title }})}
+                                      onClick={() => trackEvent({ type: TELEMETRY_EVENTS.GOOGLE_VERIFY_CLICK, metadata: { type: 'course', title: selectedCourse.title }})}
                                       className="spec-modal-btn inline-flex items-center justify-center gap-1.5 rounded-sm border border-surface bg-surface/20 px-4 py-2 text-[9px] font-mono uppercase tracking-[0.24em] text-foreground transition-all shrink-0"
                                     >
                                       Verify Course

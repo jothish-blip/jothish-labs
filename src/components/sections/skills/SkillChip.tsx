@@ -7,7 +7,14 @@ interface Props {
 
 export default function SkillChip({ skill }: Props) {
   return (
-    <div className="skill-chip group flex items-center gap-2.5 rounded-sm border border-surface bg-surface/20 px-3 py-2 transition-all duration-300 ease-out cursor-default">
+    <div 
+      className="skill-chip group flex items-center gap-2.5 rounded-sm border border-surface bg-surface/20 px-3 py-2 transition-all duration-300 ease-out cursor-default"
+      onMouseEnter={() => {
+        import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+          trackEvent({ type: TELEMETRY_EVENTS.SKILL_INTERACT, metadata: { skill: skill.name, action: "hover" } });
+        });
+      }}
+    >
       <SkillLogo 
         logo={skill.logo} 
         icon={skill.icon} 
