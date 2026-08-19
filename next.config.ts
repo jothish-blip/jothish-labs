@@ -34,6 +34,60 @@ const nextConfig: NextConfig = {
           }
         ],
       },
+      {
+        source: "/ops/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, nosnippet, noarchive",
+          },
+        ],
+      },
+      {
+        source: "/admin/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, nosnippet, noarchive",
+          },
+        ],
+      },
+      {
+        source: "/auth/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, nosnippet, noarchive",
+          },
+        ],
+      },
+      {
+        source: "/login/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, nosnippet, noarchive",
+          },
+        ],
+      },
+      {
+        source: "/api/private/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, nosnippet, noarchive",
+          },
+        ],
+      },
+      {
+        source: "/internal/:path*",
+        headers: [
+          {
+            key: "X-Robots-Tag",
+            value: "noindex, nofollow, nosnippet, noarchive",
+          },
+        ],
+      },
     ];
   },
 };

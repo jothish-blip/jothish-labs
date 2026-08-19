@@ -121,15 +121,24 @@ function CompTIACard({ cert }: { cert: Cert }) {
 
 export default function CompTIASection() {
   const [isOpen, setIsOpen] = useState(false);
+  const startTimeRef = React.useRef<number>(0);
 
-
+  React.useEffect(() => {
+    if (isOpen) {
+      startTimeRef.current = Date.now();
+      trackEvent({ type: TELEMETRY_EVENTS.COMPTIA_SECTION_ENTER, metadata: { section: 'comptia' } });
+    } else if (startTimeRef.current > 0) {
+      const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      trackEvent({ 
+        type: TELEMETRY_EVENTS.COMPTIA_SECTION_EXIT, 
+        metadata: { section: 'comptia', duration_seconds: duration } 
+      });
+      startTimeRef.current = 0;
+    }
+  }, [isOpen]);
 
   const handleOpen = () => {
     setIsOpen(true);
-    trackEvent({
-      type: TELEMETRY_EVENTS.CERTIFICATE_OPEN,
-      metadata: { section: "CompTIA" }
-    });
   };
 
   const handleClose = () => {

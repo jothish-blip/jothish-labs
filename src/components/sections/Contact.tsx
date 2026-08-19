@@ -105,8 +105,14 @@ export default function Contact() {
   };
 
   const nextStep = () => {
-    if (step === 2 && (!formData.user_name.trim() || !formData.user_email.trim())) return;
-    if (step < 4) setStep((prev) => prev + 1);
+    if (step === 2 && (!formData.user_name.trim() || !formData.user_email.trim())) {
+      trackEvent({ type: TELEMETRY_EVENTS.ERROR, metadata: { context: "contact_validation", fields: Object.keys(formData).filter(k => !(formData as Record<string, string>)[k].trim()) } });
+      return;
+    }
+    if (step < 4) {
+      if (step === 1) trackEvent({ type: TELEMETRY_EVENTS.CONTACT_SUBMIT, metadata: { action: "started", intent } });
+      setStep((prev) => prev + 1);
+    }
   };
 
   const prevStep = () => {
@@ -151,7 +157,7 @@ export default function Contact() {
       
       trackEvent({
         type: TELEMETRY_EVENTS.CONTACT_SUBMIT,
-        metadata: { intent }
+        metadata: { action: "success", intent, message_length: payloadSize }
       });
       
       const timer = setTimeout(() => resetFlow(), 8000);
@@ -159,6 +165,7 @@ export default function Contact() {
 
     } catch {
       setStatus('error');
+      trackEvent({ type: TELEMETRY_EVENTS.ERROR, metadata: { context: "contact_submission_failed" } });
       setTimeout(() => setStatus("idle"), 5000);
     }
   };

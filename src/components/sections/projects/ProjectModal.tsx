@@ -159,6 +159,7 @@ export default function ProjectModal({ project, onClose }: Props) {
                     href={displayData.githubUrl}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => trackEvent({ type: TELEMETRY_EVENTS.GITHUB_CLICK, metadata: { project: displayData.title } })}
                     className="project-modal-btn inline-flex items-center gap-2 px-4 py-2 border border-surface bg-surface/20 text-foreground rounded-sm text-[9px] font-mono uppercase tracking-[0.24em] transition-all"
                   >
                     <Code2 size={12} /> View on GitHub
@@ -169,6 +170,7 @@ export default function ProjectModal({ project, onClose }: Props) {
                     href={displayData.readmeUrl}
                     target="_blank"
                     rel="noreferrer"
+                    onClick={() => trackEvent({ type: TELEMETRY_EVENTS.DEMO_CLICK, metadata: { project: displayData.title } })}
                     className="project-modal-btn inline-flex items-center gap-2 px-4 py-2 border border-surface bg-background text-foreground rounded-sm text-[9px] font-mono uppercase tracking-[0.24em] transition-all"
                   >
                     Read Full Case Study <ExternalLink size={10} />

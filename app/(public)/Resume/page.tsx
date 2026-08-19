@@ -127,7 +127,7 @@ export default function ResumePage() {
           </Suspense>
 
           <a 
-            href="/Jothish_Gandham_Cybersecurity_Resume.pdf" 
+            href="/GANDHAM_JOTHISH_Resume.pdf" 
             download 
             onClick={() => trackEvent({ type: TELEMETRY_EVENTS.RESUME_DOWNLOAD })}
             aria-label="Download Jothish Gandham Cybersecurity Resume as PDF"
@@ -176,7 +176,7 @@ export default function ResumePage() {
               <span className="hidden sm:inline text-surface-strong">|</span>
               <span className="flex items-center gap-1.5">
                 <Globe size={14} className="text-muted" /> 
-                <a href="https://jothish-labs.vercel.app/" target="_blank" rel="noreferrer" className="resume-link">jothish-labs.vercel.app</a>
+                <a href="https://www.webjothishanalyst.site/" target="_blank" rel="noreferrer" className="resume-link">https://www.webjothishanalyst.site/</a>
               </span>
             </div>
           </header>

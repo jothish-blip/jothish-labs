@@ -6,6 +6,9 @@ import { ExternalLink, ChevronDown } from "lucide-react";
 export default function IdentitySection() {
   const [showResumeOptions, setShowResumeOptions] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const scrollMaxRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -21,8 +24,61 @@ export default function IdentitySection() {
     };
   }, []);
 
+  useEffect(() => {
+    let isVisible = false;
+    
+    const handleScroll = () => {
+      if (!isVisible || !sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      let visiblePercent = 0;
+      if (rect.top >= viewportHeight) {
+        visiblePercent = 0;
+      } else if (rect.bottom <= 0) {
+        visiblePercent = 100;
+      } else {
+        const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        visiblePercent = Math.round((visibleHeight / rect.height) * 100);
+      }
+      if (visiblePercent > scrollMaxRef.current) {
+        scrollMaxRef.current = Math.min(visiblePercent, 100);
+      }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          isVisible = true;
+          startTimeRef.current = Date.now();
+          import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+            trackEvent({ type: TELEMETRY_EVENTS.IDENTITY_ENTER, metadata: { section: 'identity' } });
+          });
+          window.addEventListener('scroll', handleScroll, { passive: true });
+          handleScroll(); // Initial check
+        } else if (isVisible) {
+          isVisible = false;
+          window.removeEventListener('scroll', handleScroll);
+          const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+          import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+            trackEvent({ 
+              type: TELEMETRY_EVENTS.IDENTITY_EXIT, 
+              metadata: { section: 'identity', duration_seconds: duration, scroll_depth: scrollMaxRef.current } 
+            });
+          });
+          scrollMaxRef.current = 0;
+        }
+      });
+    }, { threshold: 0.1 });
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => {
+      if (sectionRef.current) observer.unobserve(sectionRef.current);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 items-start max-w-6xl mx-auto px-4 md:px-0">
+    <div ref={sectionRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-12 items-start max-w-6xl mx-auto px-4 md:px-0">
       
       {/* Local Styles for dynamic accent hovers */}
       <style>{`
@@ -114,7 +170,7 @@ export default function IdentitySection() {
                     View Resume
                   </a>
                   <a
-                    href="/Resume.pdf"
+                    href="/GANDHAM_JOTHISH_Resume.pdf"
                     download
                     className="identity-link block px-4 py-3 text-[9px] font-mono uppercase tracking-[0.24em] text-muted transition-colors border-t border-surface"
                     onClick={() => setShowResumeOptions(false)}

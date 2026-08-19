@@ -1,6 +1,6 @@
 'use client';
 
-import { ShieldAlert, ShieldCheck, AlertTriangle, Lock, Unlock, Database, Activity, MapPin, Globe, Monitor, Clock, ShieldBan, Crosshair } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, AlertTriangle, Lock, Unlock, Database, Activity, MapPin, Globe, Monitor, Clock, ShieldBan, Crosshair, Server } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { motion } from 'framer-motion';
 
@@ -38,6 +38,17 @@ type Props = {
   rlsEnabled: boolean;
   failedLoginChains: FailedLoginChain[];
   suspiciousActors: SuspiciousActor[];
+  systemDetails?: {
+    server: string;
+    os: string;
+    node: string;
+    runtime: string;
+    environment: string;
+    cpu: string;
+    memory: string;
+    uptime: string;
+    build: string;
+  };
 };
 
 export default function SecurityClient({ 
@@ -47,7 +58,8 @@ export default function SecurityClient({
   blockedIPs, 
   rlsEnabled,
   failedLoginChains,
-  suspiciousActors
+  suspiciousActors,
+  systemDetails
 }: Props) {
   
   const threatLevel = failedLogins > 10 || suspiciousActors.some(a => a.severity === 'Critical') ? 'CRITICAL' 
@@ -132,6 +144,37 @@ export default function SecurityClient({
           </span>
         </div>
       </div>
+
+      {/* System Architecture Details */}
+      {systemDetails && (
+        <div className="bg-background border border-surface p-6 rounded-sm">
+          <h3 className="text-xs font-mono tracking-widest uppercase text-muted mb-6 flex items-center gap-2 border-b border-surface pb-4">
+            <Server size={14} className="text-blue-500" /> System Architecture & Host Details
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="p-3 bg-surface/5 border border-surface rounded-sm">
+              <span className="block text-[9px] font-mono uppercase tracking-widest text-muted mb-1">Host Server</span>
+              <span className="block text-xs font-mono text-foreground truncate">{systemDetails.server}</span>
+            </div>
+            <div className="p-3 bg-surface/5 border border-surface rounded-sm">
+              <span className="block text-[9px] font-mono uppercase tracking-widest text-muted mb-1">Operating System</span>
+              <span className="block text-xs font-mono text-foreground truncate">{systemDetails.os}</span>
+            </div>
+            <div className="p-3 bg-surface/5 border border-surface rounded-sm">
+              <span className="block text-[9px] font-mono uppercase tracking-widest text-muted mb-1">Runtime</span>
+              <span className="block text-xs font-mono text-foreground truncate">{systemDetails.node}</span>
+            </div>
+            <div className="p-3 bg-surface/5 border border-surface rounded-sm">
+              <span className="block text-[9px] font-mono uppercase tracking-widest text-muted mb-1">Memory allocation</span>
+              <span className="block text-xs font-mono text-foreground truncate">{systemDetails.memory}</span>
+            </div>
+            <div className="p-3 bg-surface/5 border border-surface rounded-sm">
+              <span className="block text-[9px] font-mono uppercase tracking-widest text-muted mb-1">CPU Identity</span>
+              <span className="block text-xs font-mono text-foreground truncate" title={systemDetails.cpu}>{systemDetails.cpu}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         

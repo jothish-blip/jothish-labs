@@ -10,6 +10,7 @@ export default async function OpsOverview() {
   // Date Helpers
   const now = new Date();
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const fiveMinsAgo = new Date(now.getTime() - 5 * 60000).toISOString();
 
   // Top Row Metrics
@@ -25,6 +26,34 @@ export default async function OpsOverview() {
     .select('*', { count: 'exact', head: true })
     .gte('created_at', startOfDay);
 
+  // Visitors This Week
+  const { count: visitorsThisWeek } = await supabase
+    .from('portfolio_visitors')
+    .select('*', { count: 'exact', head: true })
+    .gte('first_visit', startOfWeek);
+
+  // Terminal Usage (total commands)
+  const { count: terminalUsage } = await supabase
+    .from('portfolio_events')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_type', 'TERMINAL_COMMAND');
+
+  // Bounce Rate & Avg Session Time
+  const { data: allSessions } = await supabase
+    .from('portfolio_sessions')
+    .select('bounced, duration')
+    .order('created_at', { ascending: false })
+    .limit(1000);
+    
+  let bounceRate = 0;
+  let avgSessionTime = 0;
+  if (allSessions && allSessions.length > 0) {
+    const bounces = allSessions.filter(s => s.bounced).length;
+    bounceRate = Math.round((bounces / allSessions.length) * 100);
+    const totalDuration = allSessions.reduce((acc, s) => acc + (s.duration || 0), 0);
+    avgSessionTime = Math.round(totalDuration / allSessions.length);
+  }
+
   // 3. Security Status / Failed Logins
   const { count: failedLogins } = await supabase
     .from('portfolio_audit_logs')
@@ -32,11 +61,10 @@ export default async function OpsOverview() {
     .eq('action', 'FAILED_LOGIN')
     .gte('created_at', startOfDay);
 
-  // 4. Unread Contacts
+  // 4. Contact Submissions
   const { count: unreadCount } = await supabase
     .from('portfolio_contacts')
     .select('*', { count: 'exact', head: true })
-    .eq('status', 'unread')
     .is('deleted_at', null);
 
   // 5. Resume Downloads
@@ -71,7 +99,7 @@ export default async function OpsOverview() {
     .from('portfolio_events')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(10);
+    .limit(20);
 
   // Third Row
   // 1. Most Viewed Projects
@@ -114,6 +142,10 @@ export default async function OpsOverview() {
     <OpsDashboardClient 
       activeVisitors={activeVisitors || 0}
       sessionsToday={sessionsToday || 0}
+      visitorsThisWeek={visitorsThisWeek || 0}
+      terminalUsage={terminalUsage || 0}
+      bounceRate={bounceRate}
+      avgSessionTime={avgSessionTime}
       failedLogins={failedLogins || 0}
       unreadCount={unreadCount || 0}
       resumeDownloads={resumeDownloads || 0}

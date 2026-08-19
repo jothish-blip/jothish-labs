@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 import GoogleWordmark from "./GoogleWordmark";
@@ -14,15 +14,25 @@ import { trackEvent, TELEMETRY_EVENTS } from "@/lib/telemetry/events";
 export default function GoogleSection() {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedSpecialization, setSelectedSpecialization] = useState<GoogleSpecialization | null>(null);
+  
+  const startTimeRef = useRef<number>(0);
 
-
+  useEffect(() => {
+    if (isOpen) {
+      startTimeRef.current = Date.now();
+      trackEvent({ type: TELEMETRY_EVENTS.GOOGLE_SECTION_ENTER, metadata: { section: 'google_certifications' } });
+    } else if (startTimeRef.current > 0) {
+      const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+      trackEvent({ 
+        type: TELEMETRY_EVENTS.GOOGLE_SECTION_EXIT, 
+        metadata: { section: 'google_certifications', duration_seconds: duration } 
+      });
+      startTimeRef.current = 0;
+    }
+  }, [isOpen]);
 
   const handleOpenModal = (specialization: GoogleSpecialization) => {
     setSelectedSpecialization(specialization);
-    trackEvent({
-      type: TELEMETRY_EVENTS.CERTIFICATE_OPEN,
-      metadata: { certificate: specialization.title }
-    });
   };
 
   const handleCloseModal = () => {

@@ -66,12 +66,26 @@ export async function POST(request: Request) {
 
       if (firstView) {
         const view = firstView as { created_at: string };
-        const duration = Math.round((Date.now() - new Date(view.created_at).getTime()) / 1000);
+        const duration = Math.max(0, Math.round((Date.now() - new Date(view.created_at).getTime()) / 1000));
         await supabase.from('portfolio_sessions').update({
           duration: duration,
-          exit_page: path,
           bounced: duration < 10
         }).eq('session_id', sessionId);
+        
+        // Update visitor total time spent
+        const allSessions = await safeDbOperation(supabase
+          .from('portfolio_sessions')
+          .select('duration')
+          .eq('visitor_id', visitorId));
+        
+        if (allSessions.data) {
+          const sessionsList = allSessions.data as { duration: number }[];
+          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.duration || 0), 0);
+          await supabase.from('portfolio_visitors').update({
+            total_time_spent: totalDuration,
+            last_visit: new Date().toISOString()
+          }).eq('visitor_id', visitorId);
+        }
       }
     } else if (type === 'custom_event') {
       const { event_type, event_name, event_data } = body;
@@ -88,19 +102,51 @@ export async function POST(request: Request) {
         event_data: event_data || {}
       });
 
-      // Update session event count
+      // Update session metrics
       const sessionRes = await safeDbOperation(supabase
         .from('portfolio_sessions')
-        .select('event_count')
+        .select('*')
         .eq('session_id', sessionId)
         .single());
 
       if (sessionRes.data) {
-        const sessionData = sessionRes.data as { event_count?: number };
+        const sessionData = sessionRes.data as any;
+        const duration = Math.max(0, Math.round((Date.now() - new Date(sessionData.created_at).getTime()) / 1000));
+        
+        let entry_page = sessionData.entry_page;
+        let exit_page = sessionData.exit_page;
+        
+        // If it's a section event, update entry/exit
+        const section = event_data?.section || event_name;
+        if (event_type === 'SECTION_ENTER' || event_type === 'ABOUT_ENTER' || event_type === 'GOOGLE_SECTION_ENTER' || event_type === 'COMPTIA_SECTION_ENTER' || event_type === 'IDENTITY_ENTER' || event_type === 'FOCUS_ENTER') {
+          if (!entry_page || entry_page === '/') {
+            entry_page = section;
+          }
+          exit_page = section;
+        }
+
         await supabase.from('portfolio_sessions').update({
           event_count: (sessionData.event_count || 0) + 1,
+          duration: duration,
+          entry_page: entry_page,
+          exit_page: exit_page,
           updated_at: new Date().toISOString()
         }).eq('session_id', sessionId);
+
+        // Update visitor total time spent
+        const allSessions = await safeDbOperation(supabase
+          .from('portfolio_sessions')
+          .select('duration')
+          .eq('visitor_id', visitorId));
+        
+        if (allSessions.data) {
+          const sessionsList = allSessions.data as { duration: number }[];
+          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.duration || 0), 0);
+          await supabase.from('portfolio_visitors').update({
+            total_time_spent: totalDuration,
+            last_visit: new Date().toISOString()
+          }).eq('visitor_id', visitorId);
+        }
       }
     }
 

@@ -171,7 +171,7 @@ export default function Hero() {
               {[
                 { label: "Projects", value: "12+" },
                 { label: "Labs", value: "20+" },
-                { label: "CTFs", value: "-" },
+                { label: "CTFs", value: "5+" },
                 { label: "Learning", value: "Daily", isAccent: true }
               ].map((stat) => (
                 <div key={stat.label} className="space-y-1.5 group">
@@ -207,14 +207,20 @@ export default function Hero() {
           <div className="mt-12 flex flex-wrap items-center gap-4 pl-6 lg:pl-8">
             <a 
               href="#projects"
-              onClick={handleInteraction}
+              onClick={() => {
+                handleInteraction();
+                import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.CTA_CLICK, metadata: { target: 'projects' } }));
+              }}
               className="hero-btn-primary px-8 py-3.5 font-mono text-[9px] tracking-[0.24em] uppercase rounded-sm flex items-center gap-2 focus:outline-none transition-all duration-300"
             >
               See Security Projects
             </a>
             <a
               href="/Resume"
-              onClick={handleInteraction}
+              onClick={() => {
+                handleInteraction();
+                import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.CTA_CLICK, metadata: { target: 'resume' } }));
+              }}
               className="px-8 py-3.5 border border-surface bg-surface/20 text-foreground hover:bg-surface font-mono text-[9px] uppercase tracking-[0.24em] transition-all duration-300 hover:-translate-y-[2px] rounded-sm flex items-center gap-2 focus:outline-none"
             >
               View Resume <ArrowRight size={12} />
@@ -232,6 +238,7 @@ export default function Hero() {
                 href="https://linkedin.com/in/jothish-gandham" 
                 target="_blank" 
                 rel="noopener noreferrer"
+                onClick={() => import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.SOCIAL_CLICK, metadata: { platform: 'linkedin' } }))}
                 className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
               >
                 <LinkedinIcon className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
@@ -244,6 +251,7 @@ export default function Hero() {
                 href="https://github.com/jothish-blip" 
                 target="_blank" 
                 rel="noopener noreferrer"
+                onClick={() => import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.SOCIAL_CLICK, metadata: { platform: 'github' } }))}
                 className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
               >
                 <GithubIcon className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
@@ -254,6 +262,7 @@ export default function Hero() {
 
               <a 
                 href="mailto:jothishgandham2@gmail.com" 
+                onClick={() => import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.SOCIAL_CLICK, metadata: { platform: 'email' } }))}
                 className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
               >
                 <Mail className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
@@ -264,6 +273,7 @@ export default function Hero() {
 
               <a 
                 href="tel:+918374754009" 
+                onClick={() => import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => trackEvent({ type: TELEMETRY_EVENTS.SOCIAL_CLICK, metadata: { platform: 'phone' } }))}
                 className="flex items-center gap-3 p-3 border border-surface bg-surface/10 hover:bg-surface/50 hover:border-surface-strong rounded-sm group transition-all"
               >
                 <Phone className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />

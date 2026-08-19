@@ -72,6 +72,64 @@ export default async function OpsReports() {
     .slice(0, 10)
     .map(([name, views]) => ({ name, views }));
 
+  // 6. Generate 7-day Traffic Data for Charts
+  const { data: weekSessions } = await supabaseAdmin
+    .from('portfolio_sessions')
+    .select('id, visitor_id, created_at')
+    .gte('created_at', sevenDaysAgo);
+
+  const trafficMap: Record<string, { sessions: number, visitors: Set<string> }> = {};
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+    trafficMap[dayName] = { sessions: 0, visitors: new Set() };
+  }
+
+  if (weekSessions) {
+    weekSessions.forEach(s => {
+      const d = new Date(s.created_at);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      if (trafficMap[dayName]) {
+         trafficMap[dayName].sessions += 1;
+         trafficMap[dayName].visitors.add(s.visitor_id);
+      }
+    });
+  }
+
+  const trafficData = Object.entries(trafficMap).map(([name, data]) => ({
+    name,
+    sessions: data.sessions,
+    visitors: data.visitors.size
+  }));
+
+  // 7. Demographics & Devices
+  const { data: visitors } = await supabaseAdmin
+    .from('portfolio_visitors')
+    .select('country, device_type, os');
+
+  const locationMap: Record<string, number> = {};
+  const deviceMap: Record<string, number> = {};
+  
+  if (visitors) {
+    visitors.forEach(v => {
+      const c = v.country || 'Unknown';
+      locationMap[c] = (locationMap[c] || 0) + 1;
+      
+      const d = v.device_type || 'Unknown';
+      deviceMap[d] = (deviceMap[d] || 0) + 1;
+    });
+  }
+
+  const locationData = Object.entries(locationMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([name, count]) => ({ name, count }));
+
+  const deviceData = Object.entries(deviceMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count }));
+
   const reportData = {
     generatedAt: now.toISOString(),
     daily: {
@@ -87,8 +145,10 @@ export default async function OpsReports() {
     },
     contacts: contactStats,
     topProjects,
-    resumeDownloads
+    resumeDownloads,
+    locationData,
+    deviceData
   };
 
-  return <ReportsClient reportData={reportData} />;
+  return <ReportsClient reportData={reportData} trafficData={trafficData} />;
 }

@@ -1,6 +1,65 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 export default function FocusSection() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const scrollMaxRef = useRef<number>(0);
+  const startTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    let isVisible = false;
+    
+    const handleScroll = () => {
+      if (!isVisible || !sectionRef.current) return;
+      const rect = sectionRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      let visiblePercent = 0;
+      if (rect.top >= viewportHeight) {
+        visiblePercent = 0;
+      } else if (rect.bottom <= 0) {
+        visiblePercent = 100;
+      } else {
+        const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        visiblePercent = Math.round((visibleHeight / rect.height) * 100);
+      }
+      if (visiblePercent > scrollMaxRef.current) {
+        scrollMaxRef.current = Math.min(visiblePercent, 100);
+      }
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          isVisible = true;
+          startTimeRef.current = Date.now();
+          import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+            trackEvent({ type: TELEMETRY_EVENTS.FOCUS_ENTER, metadata: { section: 'focus' } });
+          });
+          window.addEventListener('scroll', handleScroll, { passive: true });
+          handleScroll();
+        } else if (isVisible) {
+          isVisible = false;
+          window.removeEventListener('scroll', handleScroll);
+          const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+          import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+            trackEvent({ 
+              type: TELEMETRY_EVENTS.FOCUS_EXIT, 
+              metadata: { section: 'focus', duration_seconds: duration, scroll_depth: scrollMaxRef.current } 
+            });
+          });
+          scrollMaxRef.current = 0;
+        }
+      });
+    }, { threshold: 0.1 });
+
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => {
+      if (sectionRef.current) observer.unobserve(sectionRef.current);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   const toolkit = [
     {
       category: "Operating Systems",
@@ -29,7 +88,7 @@ export default function FocusSection() {
   ];
 
   return (
-    <div className="py-16 border-t border-surface max-w-5xl mx-auto px-4 md:px-0">
+    <div ref={sectionRef} className="py-16 border-t border-surface max-w-5xl mx-auto px-4 md:px-0">
       
       {/* Local Styles for dynamic accent hovers */}
       <style>{`
@@ -156,6 +215,11 @@ export default function FocusSection() {
               <div 
                 key={group.category} 
                 className="focus-card group border border-surface bg-background hover:bg-surface/10 transition-all duration-300 p-5 sm:p-6 rounded-md flex flex-col h-full overflow-hidden cursor-default"
+                onMouseEnter={() => {
+                  import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+                    trackEvent({ type: TELEMETRY_EVENTS.SKILL_INTERACT, metadata: { skill: group.category, action: 'hover', section: 'focus' } });
+                  });
+                }}
               >
                 <div className="flex justify-between items-start mb-6">
                   <h5 className="text-[13px] text-foreground font-semibold tracking-tight uppercase pr-2">

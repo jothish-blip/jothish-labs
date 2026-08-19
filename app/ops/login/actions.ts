@@ -4,29 +4,54 @@ import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 
-// Helper to extract basic OS/Browser from User Agent
-function parseUserAgent(ua: string) {
+function parseUserAgentDetailed(ua: string) {
   let browser = 'Unknown';
+  let browser_version = 'Unknown';
   let os = 'Unknown';
+  let os_version = 'Unknown';
+  let device = 'Desktop';
 
-  if (ua.includes('Firefox')) browser = 'Firefox';
-  else if (ua.includes('Edg')) browser = 'Edge';
-  else if (ua.includes('Chrome')) browser = 'Chrome';
-  else if (ua.includes('Safari') && !ua.includes('Chrome')) browser = 'Safari';
+  if (ua.includes('Firefox')) {
+    browser = 'Firefox';
+    browser_version = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'Unknown';
+  } else if (ua.includes('Edg')) {
+    browser = 'Edge';
+    browser_version = ua.match(/Edg\/([\d.]+)/)?.[1] || 'Unknown';
+  } else if (ua.includes('Chrome')) {
+    browser = 'Chrome';
+    browser_version = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'Unknown';
+  } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
+    browser = 'Safari';
+    browser_version = ua.match(/Version\/([\d.]+)/)?.[1] || 'Unknown';
+  }
 
-  if (ua.includes('Win')) os = 'Windows';
-  else if (ua.includes('Mac')) os = 'macOS';
-  else if (ua.includes('Linux')) os = 'Linux';
-  else if (ua.includes('Android')) os = 'Android';
-  else if (ua.includes('iOS') || ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  if (ua.includes('Windows NT 10.0')) { os = 'Windows'; os_version = '10/11'; }
+  else if (ua.includes('Windows NT 6.3')) { os = 'Windows'; os_version = '8.1'; }
+  else if (ua.includes('Windows NT 6.2')) { os = 'Windows'; os_version = '8'; }
+  else if (ua.includes('Windows NT 6.1')) { os = 'Windows'; os_version = '7'; }
+  else if (ua.includes('Mac OS X')) { 
+    os = 'macOS'; 
+    os_version = ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g, '.') || 'Unknown'; 
+  }
+  else if (ua.includes('Android')) {
+    os = 'Android';
+    os_version = ua.match(/Android ([\d.]+)/)?.[1] || 'Unknown';
+    device = 'Mobile';
+  }
+  else if (ua.includes('iPhone OS') || ua.includes('iPad; CPU OS')) {
+    os = 'iOS';
+    os_version = ua.match(/OS ([\d_]+)/)?.[1]?.replace(/_/g, '.') || 'Unknown';
+    device = 'Mobile';
+  }
+  else if (ua.includes('Linux')) { os = 'Linux'; }
 
-  return { browser, os };
+  return { browser, browser_version, os, os_version, device };
 }
 
 async function getClientContext() {
   const headersList = await headers();
   const ua = headersList.get('user-agent') || 'Unknown';
-  const { browser, os } = parseUserAgent(ua);
+  const { browser, browser_version, os, os_version, device } = parseUserAgentDetailed(ua);
   
   const city = headersList.get('x-vercel-ip-city') || '';
   const region = headersList.get('x-vercel-ip-country-region') || '';
@@ -38,7 +63,10 @@ async function getClientContext() {
     ip: headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || headersList.get('x-real-ip') || 'Local Development',
     userAgent: ua,
     browser,
+    browser_version,
     os,
+    os_version,
+    device,
     location,
     city: city || 'Unknown',
     region: region || 'Unknown',
@@ -137,6 +165,22 @@ export async function login(formData: FormData) {
     details: { ...context, email, userId: adminId }
   });
 
+  const sessionToken = data.session?.access_token || crypto.randomUUID();
+  
+  if (adminId) {
+    await supabaseAdmin.from('portfolio_admin_sessions').insert({
+      admin_id: adminId,
+      session_token: sessionToken,
+      ip_address: context.ip,
+      country: context.country,
+      browser: context.browser,
+      device: context.device,
+      os: context.os,
+      current_page: '/ops',
+      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    });
+  }
+
   redirect('/ops');
 }
 
@@ -158,6 +202,10 @@ export async function logout() {
       os: context.os,
       details: { ...context, email: session.user.email, userId: session.user.id }
     });
+
+    await supabaseAdmin.from('portfolio_admin_sessions')
+      .update({ is_revoked: true, expires_at: new Date().toISOString() })
+      .eq('admin_id', session.user.id);
   }
 
   await supabase.auth.signOut();

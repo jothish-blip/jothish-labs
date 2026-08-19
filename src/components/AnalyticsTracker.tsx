@@ -54,18 +54,9 @@ export default function AnalyticsTracker() {
       }
     };
 
-    const handleScroll = () => {
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const scrolled = (window.scrollY / scrollHeight) * 100;
-      if (scrolled > maxScroll.current) {
-        maxScroll.current = Math.min(Math.round(scrolled), 100);
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
     // Section Observer
     const sectionTimers = new Map<string, number>();
+    const sectionScrolls = new Map<string, number>();
     let activeSection: string | null = null;
 
     const observer = new IntersectionObserver((entries) => {
@@ -75,27 +66,62 @@ export default function AnalyticsTracker() {
         
         if (entry.isIntersecting) {
           sectionTimers.set(id, Date.now());
+          sectionScrolls.set(id, 0); // reset scroll for this section
           activeSection = id;
+          import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
+            trackEvent({
+              type: TELEMETRY_EVENTS.SECTION_ENTER,
+              metadata: { section: id }
+            });
+          });
         } else {
           const entryTime = sectionTimers.get(id);
           if (entryTime) {
             const duration = Math.round((Date.now() - entryTime) / 1000);
+            const scrollDepth = sectionScrolls.get(id) || 0;
             sectionTimers.delete(id);
-            if (duration > 1) { // Only track if they stayed for more than 1 second
+            if (duration >= 0) {
               import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
                 trackEvent({
-                  type: TELEMETRY_EVENTS.SECTION_VIEW,
-                  metadata: { section: id, duration_seconds: duration }
+                  type: TELEMETRY_EVENTS.SECTION_EXIT,
+                  metadata: { section: id, duration_seconds: duration, scroll_depth: scrollDepth }
                 });
               });
             }
           }
         }
       });
-    }, { threshold: 0.5 }); // Fire when 50% visible
+    }, { threshold: 0.3 }); // Lower threshold for taller sections
 
     const sections = document.querySelectorAll('section[id]');
     sections.forEach(section => observer.observe(section));
+
+    const handleScroll = () => {
+      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrolled = (window.scrollY / scrollHeight) * 100;
+      if (scrolled > maxScroll.current) {
+        maxScroll.current = Math.min(Math.round(scrolled), 100);
+      }
+      
+      // Update active section scroll depth
+      if (activeSection) {
+        const sectionEl = document.getElementById(activeSection);
+        if (sectionEl) {
+          const rect = sectionEl.getBoundingClientRect();
+          const sectionHeight = rect.height;
+          // Calculate how much of the section is scrolled past
+          const scrolledPast = Math.max(0, -rect.top);
+          // Calculate percentage based on visible viewport height against section height
+          const percentage = Math.min(100, Math.round(((scrolledPast + window.innerHeight) / sectionHeight) * 100));
+          const currentMax = sectionScrolls.get(activeSection) || 0;
+          if (percentage > currentMax) {
+            sectionScrolls.set(activeSection, percentage);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     const trackExit = () => {
       const timeSpent = Math.round((Date.now() - viewStartTime.current) / 1000);
@@ -103,11 +129,12 @@ export default function AnalyticsTracker() {
       // Flush active section
       if (activeSection && sectionTimers.has(activeSection)) {
         const duration = Math.round((Date.now() - sectionTimers.get(activeSection)!) / 1000);
-        if (duration > 1) {
+        const scrollDepth = sectionScrolls.get(activeSection) || 0;
+        if (duration >= 0) {
           import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
             trackEvent({
-              type: TELEMETRY_EVENTS.SECTION_VIEW,
-              metadata: { section: activeSection, duration_seconds: duration }
+              type: TELEMETRY_EVENTS.SECTION_EXIT,
+              metadata: { section: activeSection, duration_seconds: duration, scroll_depth: scrollDepth }
             });
           });
         }
@@ -133,8 +160,22 @@ export default function AnalyticsTracker() {
     // Initial view
     const timer = setTimeout(trackView, 1000);
     
+    // Heartbeat ping
+    const pingInterval = setInterval(() => {
+      fetch('/api/telemetry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          path: pathname,
+          type: 'ping'
+        }),
+        keepalive: true
+      }).catch(() => {});
+    }, 15000); // 15s heartbeat
+
     return () => {
       clearTimeout(timer);
+      clearInterval(pingInterval);
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('beforeunload', trackExit);
       observer.disconnect();
