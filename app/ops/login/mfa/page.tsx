@@ -101,13 +101,13 @@ export default function OpsMfaPage() {
                 Scan this QR code with Google Authenticator or Authy to secure your admin account.
               </p>
               <div 
-                className="bg-white p-2 rounded-sm mb-4 [&>svg]:w-40 [&>svg]:h-40 hidden sm:block" 
+                className="bg-white p-2 rounded-sm mb-4 [&>svg]:w-40 [&>svg]:h-40" 
                 dangerouslySetInnerHTML={{ __html: qrCodeSvg }} 
               />
               {totpUri && (
                 <a 
                   href={totpUri} 
-                  className="mb-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#E4002B]/10 text-[#E4002B] border border-[#E4002B]/20 rounded-sm font-mono text-[11px] uppercase tracking-widest hover:bg-[#E4002B]/20 transition-colors sm:hidden"
+                  className="mb-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#E4002B]/10 text-[#E4002B] border border-[#E4002B]/20 rounded-sm font-mono text-[11px] uppercase tracking-widest hover:bg-[#E4002B]/20 transition-colors"
                 >
                   <ScanLine size={16} /> Open Authenticator
                 </a>
