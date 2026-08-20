@@ -6,15 +6,15 @@ import { revalidatePath } from 'next/cache';
 
 export async function saveSettingsAction(updates: any[]) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
   
-  if (!session) {
+  if (!user) {
     throw new Error('Unauthorized');
   }
 
   const headersList = await headers();
   const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || headersList.get('x-real-ip') || 'unknown';
-  const adminEmail = session.user.email || 'unknown';
+  const adminEmail = user.email || 'unknown';
 
   // Perform updates
   for (const update of updates) {

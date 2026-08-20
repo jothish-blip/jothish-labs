@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldAlert, MessageSquare, Activity, X, TerminalSquare, AlertTriangle } from 'lucide-react';
@@ -15,7 +15,7 @@ type Notification = {
 
 export default function NotificationSystem() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
 
   const removeNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter(n => n.id !== id));
@@ -36,55 +36,77 @@ export default function NotificationSystem() {
   }, [removeNotification]);
 
   useEffect(() => {
-    // 1. Listen for new contacts
-    const contactsChannel = supabase.channel(`contacts_hud_${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_contacts' }, (payload) => {
-        addNotification({
-          title: 'Inbound Communication',
-          message: `New message from ${payload.new.name} (${payload.new.intent})`,
-          type: 'contact'
+    const supabase = supabaseRef.current;
+    let retryCount = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let isComponentMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    const connectChannel = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      
+      channel = supabase.channel('notif-system')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_contacts' }, (payload: any) => {
+          if (!isComponentMounted) return;
+          addNotification({
+            title: 'Inbound Communication',
+            message: `New message from ${payload.new.name} (${payload.new.intent})`,
+            type: 'contact'
+          });
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' }, (payload: any) => {
+          if (!isComponentMounted) return;
+          if (payload.new.action === 'FAILED_LOGIN' || payload.new.action === 'BLOCK_IP' || payload.new.action.includes('THREAT')) {
+            addNotification({
+              title: 'Security Alert',
+              message: `${payload.new.action} triggered by ${payload.new.actor || 'Unknown'}`,
+              type: 'security'
+            });
+          }
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_events' }, (payload: any) => {
+          if (!isComponentMounted) return;
+          if (payload.new.event_type === 'RESUME_DOWNLOAD') {
+            addNotification({
+              title: 'Asset Download',
+              message: `Resume downloaded by Visitor ${payload.new.visitor_id?.substring(0, 8)}`,
+              type: 'event'
+            });
+          } else if (payload.new.event_type === 'API_ERROR') {
+             addNotification({
+              title: 'System Exception',
+              message: `API Error: ${payload.new.event_name}`,
+              type: 'error'
+            });
+          }
         });
-      })
-      .subscribe();
 
-    // 2. Listen for security audit logs
-    const auditChannel = supabase.channel(`audit_hud_${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' }, (payload) => {
-        if (payload.new.action === 'FAILED_LOGIN' || payload.new.action === 'BLOCK_IP' || payload.new.action.includes('THREAT')) {
-          addNotification({
-            title: 'Security Alert',
-            message: `${payload.new.action} triggered by ${payload.new.actor || 'Unknown'}`,
-            type: 'security'
-          });
+      channel.subscribe((status: string) => {
+        if (!isComponentMounted) return;
+        
+        if (status === 'SUBSCRIBED') {
+          retryCount = 0;
         }
-      })
-      .subscribe();
+        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          retryCount++;
+          const delay = Math.min(2000 * Math.pow(1.5, retryCount - 1), 30000);
+          retryTimer = setTimeout(() => {
+            if (isComponentMounted) connectChannel();
+          }, delay);
+        }
+      });
+    };
 
-    // 3. Listen for specific telemetry events (e.g. resume download, api errors)
-    const eventsChannel = supabase.channel(`events_hud_${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_events' }, (payload) => {
-        if (payload.new.event_type === 'RESUME_DOWNLOAD') {
-          addNotification({
-            title: 'Asset Download',
-            message: `Resume downloaded by Visitor ${payload.new.visitor_id?.substring(0, 8)}`,
-            type: 'event'
-          });
-        } else if (payload.new.event_type === 'API_ERROR') {
-           addNotification({
-            title: 'System Exception',
-            message: `API Error: ${payload.new.event_name}`,
-            type: 'error'
-          });
-        }
-      })
-      .subscribe();
+    connectChannel();
 
     return () => {
-      supabase.removeChannel(contactsChannel);
-      supabase.removeChannel(auditChannel);
-      supabase.removeChannel(eventsChannel);
+      isComponentMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, [supabase, addNotification]);
+  }, [addNotification]);
 
   const getIcon = (type: string) => {
     switch (type) {

@@ -139,11 +139,15 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
   // Calculate dynamic duration for active sessions or fix negative historical ones
   const dynamicSessions = sessions.map(s => {
     let dur = (s as any).total_duration || s.duration || 0;
-    const isOnline = now - new Date(s.updated_at || s.created_at).getTime() < 5 * 60 * 1000;
     
-    // If online, duration is running. If historical and negative, fix it.
+    // Check real online status via heartbeat timestamp, ignore stale DB status
+    const lastPing = s.last_ping_at || s.updated_at || s.created_at;
+    const isOnline = lastPing ? (now - new Date(lastPing).getTime() < 60000) : false;
+    
+    // If online, duration is running. If historical, it is frozen.
     if (isOnline) {
-      dur = Math.max(dur, Math.round((now - new Date(s.created_at).getTime()) / 1000));
+      const lastSeenTime = new Date(lastPing).getTime();
+      dur = Math.max(dur, dur + Math.round((now - lastSeenTime) / 1000));
     } else {
       dur = Math.max(0, dur);
     }
@@ -152,20 +156,8 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
     const sessionEvents = events.filter(e => e.session_id === s.session_id);
     const sectionEnters = sessionEvents.filter(e => ['SECTION_ENTER', 'ABOUT_ENTER', 'GOOGLE_SECTION_ENTER', 'COMPTIA_SECTION_ENTER', 'IDENTITY_ENTER', 'FOCUS_ENTER'].includes(e.event_type));
     
-    let computedEntry = s.entry_page;
-    let computedExit = s.exit_page;
-    
-    if (computedEntry === '/' || !computedEntry) {
-      computedEntry = sectionEnters.length > 0 
-        ? (sectionEnters[0].event_data?.section || sectionEnters[0].event_name) 
-        : 'Unknown';
-    }
-    if (computedExit === '/' || !computedExit) {
-      const sectionEventsAll = sessionEvents.filter(e => e.event_type.includes('SECTION_') || e.event_type.includes('ENTER') || e.event_type.includes('EXIT'));
-      computedExit = sectionEventsAll.length > 0 
-        ? (sectionEventsAll[sectionEventsAll.length - 1].event_data?.section || sectionEventsAll[sectionEventsAll.length - 1].event_name) 
-        : 'Unknown';
-    }
+    let computedEntry = s.entry_page || 'Unknown';
+    let computedExit = s.exit_page || 'Unknown';
 
     return { ...s, _duration: dur, _isOnline: isOnline, _entry: computedEntry, _exit: computedExit, _sessionEvents: sessionEvents };
   });
@@ -218,11 +210,11 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
               {blocking ? 'Processing...' : isBlocked ? 'Unblock Visitor' : 'Block Visitor'}
             </button>
             <div className={`px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border ${
-               new Date().getTime() - new Date(visitor.last_visit).getTime() < 5 * 60 * 1000 
+               new Date().getTime() - new Date(visitor.last_visit).getTime() < 60 * 1000 
                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' 
                  : 'bg-surface/30 text-muted border-surface-strong'
             }`}>
-              {new Date().getTime() - new Date(visitor.last_visit).getTime() < 5 * 60 * 1000 ? '● ONLINE' : 'OFFLINE'}
+              {new Date().getTime() - new Date(visitor.last_visit).getTime() < 60 * 1000 ? '● ONLINE' : 'OFFLINE'}
             </div>
           </div>
         </div>

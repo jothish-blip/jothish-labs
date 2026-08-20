@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { Search, Monitor, Globe, Clock, Crosshair, ArrowUpRight, ArrowLeftRight, Activity } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -40,12 +40,13 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [visitors, setVisitors] = useState<Visitor[]>(initialVisitors);
-  const supabase = createClient();
+  const supabaseRef = useRef(createClient());
   const router = useRouter();
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
     let retryCount = 0;
-    const maxRetries = 5;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let isComponentMounted = true;
     
@@ -54,13 +55,12 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
         supabase.removeChannel(channel);
       }
       
-      const channelName = `visitors-feed`;
       channel = supabase
-        .channel(channelName)
+        .channel('visitors-feed')
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'portfolio_visitors' },
-          (payload) => {
+          (payload: any) => {
             if (!isComponentMounted) return;
             
             if (payload.eventType === 'INSERT') {
@@ -73,16 +73,18 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
           }
         );
         
-      channel.subscribe((status, err) => {
+      channel.subscribe((status: string) => {
         if (status === 'SUBSCRIBED') {
           retryCount = 0;
         }
         if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          if (isComponentMounted && retryCount < maxRetries) {
+          // Unlimited retries with exponential backoff (max 30s)
+          if (isComponentMounted) {
             retryCount++;
-            setTimeout(() => {
+            const delay = Math.min(2000 * Math.pow(1.5, retryCount - 1), 30000);
+            retryTimer = setTimeout(() => {
               if (isComponentMounted) connectChannel();
-            }, 2000 * retryCount);
+            }, delay);
           }
         }
       });
@@ -92,9 +94,10 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
 
     return () => {
       isComponentMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [supabase]);
+  }, []);
 
   const filteredVisitors = visitors.filter(v => 
     v.visitor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -152,7 +155,7 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
               <tbody className="divide-y divide-surface">
                 {filteredVisitors.length > 0 ? (
                   filteredVisitors.map((v) => {
-                    const isOnline = new Date().getTime() - new Date(v.last_visit).getTime() < 5 * 60 * 1000;
+                    const isOnline = new Date().getTime() - new Date(v.last_visit).getTime() < 60 * 1000;
                     return (
                     <tr key={v.id} onClick={() => setSelectedVisitor(v)} className="hover:bg-surface/10 transition-colors cursor-pointer group">
                       <td className="px-4 py-3">

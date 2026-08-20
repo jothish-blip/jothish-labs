@@ -29,10 +29,8 @@ export default async function OpsReports() {
   const blockedIPsWeekly = weeklySecurity?.filter(l => l.action === 'BLOCK_IP').length || 0;
 
   // 3. Monthly Analytics (Total Sessions)
-  const { count: monthlySessionsCount } = await supabaseAdmin
-    .from('portfolio_sessions')
-    .select('id', { count: 'exact', head: true })
-    .gte('created_at', thirtyDaysAgo);
+  const { getCount } = await import('@/lib/session-service');
+  const monthlySessionsCount = await getCount('portfolio_sessions', {}, { created_at: thirtyDaysAgo });
 
   // 4. Contact Statistics (All time)
   const { data: contacts } = await supabaseAdmin

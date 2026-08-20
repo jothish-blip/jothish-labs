@@ -7,9 +7,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const updates = await request.json();
 
     const supabaseClient = await createClient();
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -17,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     try {
       await supabaseAdmin.from('portfolio_audit_logs').insert({
-        actor: session.user.email ?? 'unknown',
+        actor: user.email ?? 'unknown',
         action: 'UPDATE_CONTACT',
         target: id,
         resource_type: 'contact',
@@ -47,9 +47,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     const supabaseClient = await createClient();
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    const { data: { user } } = await supabaseClient.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -57,7 +57,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     try {
       await supabaseAdmin.from('portfolio_audit_logs').insert({
-        actor: session.user.email ?? 'unknown',
+        actor: user.email ?? 'unknown',
         action: 'DELETE_CONTACT',
         target: id,
         resource_type: 'contact',

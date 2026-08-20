@@ -5,9 +5,9 @@ import { redirect } from 'next/navigation';
 
 export async function listMfaFactors() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     redirect('/ops/login');
   }
 
@@ -22,8 +22,8 @@ export async function listMfaFactors() {
 
 export async function checkMfaStatus() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { error: 'Session expired' };
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Session expired' };
 
   const factors = await supabase.auth.mfa.listFactors();
   const allFactors = factors.data?.all || [];
@@ -34,8 +34,8 @@ export async function checkMfaStatus() {
 
 export async function enrollMfa() {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { error: 'Session expired' };
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Session expired' };
 
   // Unenroll ALL existing unverified factors to prevent orphaned factors from Strict Mode
   const factors = await supabase.auth.mfa.listFactors();
@@ -65,9 +65,9 @@ export async function enrollMfa() {
 
 export async function verifyMfa(formData: FormData) {
   const supabase = await createClient();
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return { error: 'Session expired. Please sign in again.' };
   }
 
@@ -104,12 +104,18 @@ export async function verifyMfa(formData: FormData) {
   }
 
   // Insert session
-  const { createAdminClient } = await import('@/utils/supabase/server');
-  const supabaseAdmin = await createAdminClient(); 
-  const sessionToken = session.access_token;
+  const cookieStore = await import('next/headers').then(m => m.cookies());
+  const existingSid = cookieStore.get('admin_sid')?.value;
+  if (existingSid) {
+    const { expireAdmin } = await import('@/lib/session-service');
+    await expireAdmin(existingSid, user.id);
+  }
+
+  const sessionToken = crypto.randomUUID();
+  const { createAdminSession } = await import('@/lib/session-service');
   
-  await supabaseAdmin.from('portfolio_admin_sessions').insert({
-    admin_id: session.user.id,
+  await createAdminSession({
+    admin_id: user.id,
     session_token: sessionToken,
     ip_address: 'MFA Verified',
     country: 'Unknown',
@@ -117,7 +123,15 @@ export async function verifyMfa(formData: FormData) {
     device: 'Unknown',
     os: 'Unknown',
     current_page: '/ops',
-    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  });
+
+
+  cookieStore.set('admin_sid', sessionToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
   });
 
   redirect('/ops');

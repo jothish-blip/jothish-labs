@@ -1,19 +1,27 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server';
 import { cookies } from 'next/headers';
+import { findActiveVisitorSession } from '@/lib/session-service';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { type } = body;
     
-    const cookieStore = await cookies();
-    const visitorId = cookieStore.get('pf_vid')?.value;
-    const sessionId = cookieStore.get('pf_sid')?.value;
+    const cookieStore = await import('next/headers').then(m => m.cookies());
+    const visitorId = body.visitor_id || cookieStore.get('pf_vid')?.value;
     
-    if (!visitorId || !sessionId) {
-      return NextResponse.json({ success: false, error: 'No session' }, { status: 400 });
+    if (!visitorId) {
+      return NextResponse.json({ success: false, error: 'No visitor ID' }, { status: 400 });
     }
+
+    const activeSession = await findActiveVisitorSession(visitorId);
+    
+    if (!activeSession) {
+      return NextResponse.json({ success: false, error: 'No active session' }, { status: 400 });
+    }
+    
+    const sessionId = (activeSession as any).session_id;
 
     const supabase = await createAdminClient();
 
@@ -96,48 +104,21 @@ export async function POST(request: Request) {
       });
 
       // Update session metrics
-      const sessionRes = await safeDbOperation(supabase
+      await import('@/lib/session-service').then(m => m.incrementSessionEventCount(sessionId));
+
+      // Update visitor total time spent
+      const allSessions = await safeDbOperation(supabase
         .from('portfolio_sessions')
-        .select('*')
-        .eq('session_id', sessionId)
-        .single());
-
-      if (sessionRes.data) {
-        const sessionData = sessionRes.data as any;
-        
-        let entry_page = sessionData.entry_page;
-        let exit_page = sessionData.exit_page;
-        
-        // If it's a section event, update entry/exit
-        const section = event_data?.section || event_name;
-        if (event_type === 'SECTION_ENTER' || event_type === 'ABOUT_ENTER' || event_type === 'GOOGLE_SECTION_ENTER' || event_type === 'COMPTIA_SECTION_ENTER' || event_type === 'IDENTITY_ENTER' || event_type === 'FOCUS_ENTER') {
-          if (!entry_page || entry_page === '/') {
-            entry_page = section;
-          }
-          exit_page = section;
-        }
-
-        await supabase.from('portfolio_sessions').update({
-          event_count: (sessionData.event_count || 0) + 1,
-          entry_page: entry_page,
-          exit_page: exit_page,
-          updated_at: new Date().toISOString()
-        }).eq('session_id', sessionId);
-
-        // Update visitor total time spent
-        const allSessions = await safeDbOperation(supabase
-          .from('portfolio_sessions')
-          .select('total_duration')
-          .eq('visitor_id', visitorId));
-        
-        if (allSessions.data) {
-          const sessionsList = allSessions.data as { total_duration: number }[];
-          const totalDuration = sessionsList.reduce((sum, s) => sum + (s.total_duration || 0), 0);
-          await supabase.from('portfolio_visitors').update({
-            total_time_spent: totalDuration,
-            last_visit: new Date().toISOString()
-          }).eq('visitor_id', visitorId);
-        }
+        .select('total_duration')
+        .eq('visitor_id', visitorId));
+      
+      if (allSessions.data) {
+        const sessionsList = allSessions.data as { total_duration: number }[];
+        const totalDuration = sessionsList.reduce((sum, s) => sum + (s.total_duration || 0), 0);
+        await supabase.from('portfolio_visitors').update({
+          total_time_spent: totalDuration,
+          last_visit: new Date().toISOString()
+        }).eq('visitor_id', visitorId);
       }
     }
 

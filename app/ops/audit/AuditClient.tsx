@@ -50,10 +50,10 @@ export default function AuditClient({ initialAdminLogs, initialPortfolioLogs }: 
     
     const channel = supabase
       .channel(channelName)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' }, (payload: any) => {
         setAdminLogs(prev => [payload.new as AdminLog, ...prev]);
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_events' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_events' }, (payload: any) => {
         setPortfolioLogs(prev => [payload.new as PortfolioLog, ...prev]);
       })
       .subscribe();

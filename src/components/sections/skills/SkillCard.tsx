@@ -39,14 +39,8 @@ export default function SkillCard({ domain, isExpanded, onToggle }: Props) {
         boxShadow: '0 8px 30px color-mix(in srgb, var(--accent-skills) 8%, transparent)'
       } : {}}
     >
-      {/* Header (Always visible) */}
       <button 
-        onClick={() => {
-          onToggle();
-          import('@/lib/telemetry/events').then(({ trackEvent, TELEMETRY_EVENTS }) => {
-            trackEvent({ type: TELEMETRY_EVENTS.SKILL_INTERACT, metadata: { skill: domain.title, action: isExpanded ? "collapse" : "expand" } });
-          });
-        }}
+        onClick={onToggle}
         className="flex w-full items-center justify-between p-4 sm:p-5 text-left focus:outline-none bg-transparent"
         aria-expanded={isExpanded}
       >
@@ -74,7 +68,6 @@ export default function SkillCard({ domain, isExpanded, onToggle }: Props) {
               {domain.title}
             </h3>
             
-            {/* Scannable Header Metrics */}
             <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted mt-1.5 flex items-center gap-1.5">
               <span className="font-semibold text-foreground/70">{coreCount}</span> Core 
               <span className="text-surface-strong">•</span> 
@@ -99,7 +92,6 @@ export default function SkillCard({ domain, isExpanded, onToggle }: Props) {
         </div>
       </button>
 
-      {/* Expanded Content with Smooth Framer Motion Accordion */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -110,14 +102,12 @@ export default function SkillCard({ domain, isExpanded, onToggle }: Props) {
           >
             <div className="border-t border-surface p-5 sm:p-6 flex flex-col gap-8 bg-background/50">
               
-              {/* Detailed Description */}
               <div className="max-w-3xl">
                 <p className="text-[13px] leading-relaxed text-muted">
                   {domain.description}
                 </p>
               </div>
 
-              {/* Core Skills List */}
               {domain.coreSkills.length > 0 && (
                 <div>
                   <h4 className="font-mono text-[9px] uppercase tracking-[0.24em] text-muted flex items-center gap-2 mb-4">
@@ -140,7 +130,6 @@ export default function SkillCard({ domain, isExpanded, onToggle }: Props) {
                 </div>
               )}
 
-              {/* Tools & Technologies */}
               {domain.technologies.length > 0 && (
                 <div className="pt-2">
                   <h4 className="font-mono text-[9px] uppercase tracking-[0.24em] text-muted flex items-center gap-2 mb-4">
@@ -151,7 +140,6 @@ export default function SkillCard({ domain, isExpanded, onToggle }: Props) {
                       <SkillChip key={tech.name} skill={tech} />
                     ))}
                     
-                    {/* Collapsible Over-Flow Indicator */}
                     {hiddenTechCount > 0 && (
                       <button 
                         onClick={(e) => { e.stopPropagation(); setShowAllTech(true); }}

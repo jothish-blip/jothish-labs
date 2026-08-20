@@ -3,11 +3,11 @@
 import { 
   Users, ShieldAlert, MessageSquare, Terminal as TerminalIcon, 
   Activity, FileText, Globe, Monitor, Box, Award, ShieldCheck,
-  Clock, TrendingUp, TrendingDown, RefreshCcw
+  Clock, TrendingUp, TrendingDown, RefreshCcw, WifiOff, Wifi
 } from 'lucide-react';
 import { formatDistanceToNow, format, parseISO } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 
@@ -28,6 +28,7 @@ type TelemetryEvent = {
 };
 
 type DashboardProps = {
+  activeAdminSessions: number;
   activeVisitors: number;
   sessionsToday: number;
   visitorsThisWeek: number;
@@ -46,31 +47,117 @@ type DashboardProps = {
   deviceCounts: Record<string, number>;
 };
 
+type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting';
+
+const POLL_INTERVAL = 15_000; // 15 seconds
+
 export default function OpsDashboardClient({
-  activeVisitors,
-  sessionsToday,
-  visitorsThisWeek,
-  terminalUsage,
-  bounceRate,
-  avgSessionTime,
-  failedLogins,
-  unreadCount,
-  resumeDownloads,
-  recentLogs,
+  activeAdminSessions: initialActiveAdminSessions,
+  activeVisitors: initialActiveVisitors,
+  sessionsToday: initialSessionsToday,
+  visitorsThisWeek: initialVisitorsThisWeek,
+  terminalUsage: initialTerminalUsage,
+  bounceRate: initialBounceRate,
+  avgSessionTime: initialAvgSessionTime,
+  failedLogins: initialFailedLogins,
+  unreadCount: initialUnreadCount,
+  resumeDownloads: initialResumeDownloads,
+  recentLogs: initialRecentLogs,
   liveEvents: initialEvents,
-  timelineActivity,
-  projectCounts,
-  certCounts,
-  browserCounts,
-  deviceCounts
+  timelineActivity: initialTimelineActivity,
+  projectCounts: initialProjectCounts,
+  certCounts: initialCertCounts,
+  browserCounts: initialBrowserCounts,
+  deviceCounts: initialDeviceCounts
 }: DashboardProps) {
   const [mounted, setMounted] = useState(false);
   const [currentTime, setCurrentTime] = useState('');
+  
+  const [activeAdminSessions, setActiveAdminSessions] = useState(initialActiveAdminSessions);
+  const [activeVisitors, setActiveVisitors] = useState(initialActiveVisitors);
+  const [sessionsToday, setSessionsToday] = useState(initialSessionsToday);
+  const [visitorsThisWeek, setVisitorsThisWeek] = useState(initialVisitorsThisWeek);
+  const [terminalUsage, setTerminalUsage] = useState(initialTerminalUsage);
+  const [bounceRate, setBounceRate] = useState(initialBounceRate);
+  const [avgSessionTime, setAvgSessionTime] = useState(initialAvgSessionTime);
+  const [failedLogins, setFailedLogins] = useState(initialFailedLogins);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+  const [resumeDownloads, setResumeDownloads] = useState(initialResumeDownloads);
+  const [recentLogs, setRecentLogs] = useState<AuditLog[]>(initialRecentLogs);
   const [liveEventsFeed, setLiveEventsFeed] = useState<TelemetryEvent[]>(initialEvents);
-  const [healthScore, setHealthScore] = useState(100 - (failedLogins * 5));
+  const [timelineActivity, setTimelineActivity] = useState(initialTimelineActivity);
+  const [projectCounts, setProjectCounts] = useState(initialProjectCounts);
+  const [certCounts, setCertCounts] = useState(initialCertCounts);
+  const [browserCounts, setBrowserCounts] = useState(initialBrowserCounts);
+  const [deviceCounts, setDeviceCounts] = useState(initialDeviceCounts);
+  
+  const [healthScore, setHealthScore] = useState(100 - (initialFailedLogins * 5));
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isVisibleRef = useRef(true);
+  const supabaseRef = useRef(createClient());
 
-  const supabase = createClient();
+  // Fetch metrics from the dedicated API endpoint
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const res = await fetch('/api/ops/metrics', { 
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.warn('[Dashboard] Auth expired during polling');
+          return;
+        }
+        throw new Error(`Metrics fetch failed: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      setActiveAdminSessions(data.activeAdminSessions);
+      setActiveVisitors(data.activeVisitors);
+      setSessionsToday(data.sessionsToday);
+      setVisitorsThisWeek(data.visitorsThisWeek);
+      setTerminalUsage(data.terminalUsage);
+      setBounceRate(data.bounceRate);
+      setAvgSessionTime(data.avgSessionTime);
+      setFailedLogins(data.failedLogins);
+      setUnreadCount(data.unreadCount);
+      setResumeDownloads(data.resumeDownloads);
+      setRecentLogs(data.recentLogs);
+      setLiveEventsFeed(data.liveEvents);
+      setTimelineActivity(data.timelineActivity);
+      setProjectCounts(data.projectCounts);
+      setCertCounts(data.certCounts);
+      setBrowserCounts(data.browserCounts);
+      setDeviceCounts(data.deviceCounts);
+      setHealthScore(Math.max(0, Math.min(100, 100 - (data.failedLogins * 5))));
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('[Dashboard] Metrics poll failed:', error);
+    }
+  }, []);
 
+  // Start/stop polling based on visibility
+  const startPolling = useCallback(() => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    pollTimerRef.current = setInterval(() => {
+      if (isVisibleRef.current) {
+        fetchMetrics();
+      }
+    }, POLL_INTERVAL);
+  }, [fetchMetrics]);
+
+  const stopPolling = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
+  }, []);
+
+  // Clock
   useEffect(() => {
     setMounted(true);
     setCurrentTime(format(new Date(), 'HH:mm:ss'));
@@ -82,25 +169,51 @@ export default function OpsDashboardClient({
     return () => clearInterval(interval);
   }, []);
 
-  // Supabase Real-time Subscription for Live Feed
+  // Visibility change listener — pause polling when tab is hidden, resume + fetch on visible
   useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        isVisibleRef.current = false;
+        stopPolling();
+      } else {
+        isVisibleRef.current = true;
+        // Immediately fetch fresh data when tab becomes visible
+        fetchMetrics();
+        startPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchMetrics, startPolling, stopPolling]);
+
+  // Polling for aggregate metrics
+  useEffect(() => {
+    startPolling();
+    return () => stopPolling();
+  }, [startPolling, stopPolling]);
+
+  // Supabase Realtime Subscriptions — single channel for all dashboard tables
+  useEffect(() => {
+    const supabase = supabaseRef.current;
     let retryCount = 0;
-    const maxRetries = 5;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
     let isComponentMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     
     const connectChannel = () => {
       if (channel) {
         supabase.removeChannel(channel);
       }
       
-      const channelName = `live-telemetry-feed`;
+      setConnectionStatus('reconnecting');
+      
       channel = supabase
-        .channel(channelName)
+        .channel('dashboard-live-feed')
         .on(
           'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'portfolio_events' },
-          (payload) => {
+          (payload: any) => {
             if (isComponentMounted) {
               const newEvent = payload.new as TelemetryEvent;
               setLiveEventsFeed(prev => [newEvent, ...prev].slice(0, 50));
@@ -109,22 +222,59 @@ export default function OpsDashboardClient({
         )
         .on(
           'postgres_changes',
+          { event: '*', schema: 'public', table: 'portfolio_visitors' },
+          () => {
+            // Visitor changed — trigger a metrics refresh for accurate counts
+            if (isComponentMounted) fetchMetrics();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'portfolio_sessions' },
+          () => {
+            if (isComponentMounted) fetchMetrics();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'portfolio_contacts' },
+          () => {
+            if (isComponentMounted) {
+              setUnreadCount(prev => prev + 1);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'portfolio_audit_logs' },
-          (payload) => {
-            // handle admin logs if needed
+          (payload: any) => {
+            if (isComponentMounted) {
+              const newLog = payload.new as AuditLog;
+              setRecentLogs(prev => [newLog, ...prev].slice(0, 5));
+              if (newLog.action === 'FAILED_LOGIN') {
+                setFailedLogins(prev => prev + 1);
+              }
+            }
           }
         );
         
-      channel.subscribe((status, err) => {
+      channel.subscribe((status: string) => {
+        if (!isComponentMounted) return;
+        
         if (status === 'SUBSCRIBED') {
           retryCount = 0;
+          setConnectionStatus('connected');
         }
         if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-          if (isComponentMounted && retryCount < maxRetries) {
+          setConnectionStatus('disconnected');
+          // Unlimited retries with exponential backoff (max 30s)
+          if (isComponentMounted) {
             retryCount++;
-            setTimeout(() => {
+            const delay = Math.min(2000 * Math.pow(1.5, retryCount - 1), 30000);
+            setConnectionStatus('reconnecting');
+            retryTimer = setTimeout(() => {
               if (isComponentMounted) connectChannel();
-            }, 2000 * retryCount);
+            }, delay);
           }
         }
       });
@@ -134,20 +284,10 @@ export default function OpsDashboardClient({
 
     return () => {
       isComponentMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
       if (channel) supabase.removeChannel(channel);
     };
-  }, [supabase]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHealthScore(() => {
-        const base = 100 - (failedLogins * 5);
-        const shift = Math.floor(Math.random() * 3) - 1;
-        return Math.min(100, Math.max(0, base + shift));
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [failedLogins]);
+  }, [fetchMetrics]);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
   const hourlyActivity = new Array(24).fill(0);
@@ -182,6 +322,32 @@ export default function OpsDashboardClient({
     return <Activity size={12} className="text-muted" />;
   };
 
+  const connectionIndicator = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono text-emerald-500 uppercase">Live</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          </div>
+        );
+      case 'reconnecting':
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono text-amber-500 uppercase">Reconnecting</span>
+            <Wifi size={10} className="text-amber-500 animate-pulse" />
+          </div>
+        );
+      case 'disconnected':
+        return (
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-mono text-red-500 uppercase">Offline</span>
+            <WifiOff size={10} className="text-red-500" />
+          </div>
+        );
+    }
+  };
+
   return (
     <motion.div className="space-y-6" variants={containerVariants} initial="hidden" animate="show">
       <header className="mb-8 border-b border-surface pb-6 flex justify-between items-end">
@@ -191,13 +357,16 @@ export default function OpsDashboardClient({
             <motion.div animate={{ opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="w-2 h-2 rounded-full bg-[#E4002B]" />
           </h1>
           <p className="text-muted text-[10px] font-mono mt-2 tracking-[0.24em] uppercase">
-            Global Telemetry & Security Operations Center
+            Global Telemetry &amp; Security Operations Center
           </p>
         </div>
         <div className="text-right hidden sm:block">
           <p className="text-[9px] font-mono text-muted uppercase tracking-[0.24em] mb-1">Time (Local)</p>
           <p className="text-lg font-mono text-foreground">
             {mounted ? currentTime : '--:--:--'}
+          </p>
+          <p className="text-[8px] font-mono text-muted mt-1">
+            Updated {mounted ? format(lastUpdated, 'HH:mm:ss') : '--:--:--'}
           </p>
         </div>
       </header>
@@ -217,7 +386,7 @@ export default function OpsDashboardClient({
           <motion.div variants={itemVariants} className="bg-background border border-surface p-4 rounded-sm relative overflow-hidden hover:border-blue-500/50 transition-colors cursor-pointer group h-full">
             <div className="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
             <p className="text-[9px] font-mono uppercase tracking-[0.2em] text-muted mb-2 flex items-center gap-2 group-hover:text-foreground transition-colors"><Activity size={12} className="text-blue-500" /> Active Sessions</p>
-            <p className="text-2xl font-mono text-foreground">{sessionsToday}</p>
+            <p className="text-2xl font-mono text-foreground">{activeAdminSessions}</p>
           </motion.div>
         </Link>
 
@@ -302,12 +471,9 @@ export default function OpsDashboardClient({
         <motion.div variants={itemVariants} className="lg:col-span-2 bg-background border border-surface rounded-sm flex flex-col">
           <div className="p-4 border-b border-surface bg-surface/10 flex justify-between items-center">
             <h3 className="text-[10px] font-mono text-muted uppercase tracking-[0.2em] flex items-center gap-2">
-              <RefreshCcw size={12} className="animate-spin-slow" /> Live Activity Feed
+              <RefreshCcw size={12} className={connectionStatus === 'connected' ? 'animate-spin-slow' : ''} /> Live Activity Feed
             </h3>
-            <div className="flex items-center gap-2">
-               <span className="text-[9px] font-mono text-emerald-500 uppercase">Connected</span>
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            </div>
+            {connectionIndicator()}
           </div>
           <div className="p-0 flex-1 overflow-y-auto max-h-[400px] custom-scrollbar">
             {liveEventsFeed && liveEventsFeed.length > 0 ? (

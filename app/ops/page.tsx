@@ -13,30 +13,22 @@ export default async function OpsOverview() {
   const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const fiveMinsAgo = new Date(now.getTime() - 5 * 60000).toISOString();
 
+  const { getActiveVisitors, getActiveAdmins, getCount } = await import('@/lib/session-service');
   // Top Row Metrics
   // 1. Active Visitors (visitors with last_visit within 5 mins)
-  const { count: activeVisitors } = await supabase
-    .from('portfolio_visitors')
-    .select('*', { count: 'exact', head: true })
-    .gte('last_visit', fiveMinsAgo);
+  const { count: activeVisitors } = await getActiveVisitors();
 
-  // 2. Sessions Today
-  const { count: sessionsToday } = await supabase
-    .from('portfolio_sessions')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', startOfDay);
+  // 2. Active Admin Sessions
+  const { count: activeAdminSessions } = await getActiveAdmins();
+
+  // 3. Sessions Today
+  const sessionsToday = await getCount('portfolio_sessions', {}, { created_at: startOfDay });
 
   // Visitors This Week
-  const { count: visitorsThisWeek } = await supabase
-    .from('portfolio_visitors')
-    .select('*', { count: 'exact', head: true })
-    .gte('first_visit', startOfWeek);
+  const visitorsThisWeek = await getCount('portfolio_visitors', {}, { first_visit: startOfWeek });
 
   // Terminal Usage (total commands)
-  const { count: terminalUsage } = await supabase
-    .from('portfolio_events')
-    .select('*', { count: 'exact', head: true })
-    .eq('event_type', 'TERMINAL_COMMAND');
+  const terminalUsage = await getCount('portfolio_events', { event_type: 'TERMINAL_COMMAND' });
 
   // Bounce Rate & Avg Session Time
   const { data: allSessions } = await supabase
@@ -55,23 +47,13 @@ export default async function OpsOverview() {
   }
 
   // 3. Security Status / Failed Logins
-  const { count: failedLogins } = await supabase
-    .from('portfolio_audit_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('action', 'FAILED_LOGIN')
-    .gte('created_at', startOfDay);
+  const failedLogins = await getCount('portfolio_audit_logs', { action: 'FAILED_LOGIN' }, { created_at: startOfDay });
 
   // 4. Contact Submissions
-  const { count: unreadCount } = await supabase
-    .from('portfolio_contacts')
-    .select('*', { count: 'exact', head: true })
-    .is('deleted_at', null);
+  const unreadCount = await getCount('portfolio_contacts', { deleted_at: null });
 
   // 5. Resume Downloads
-  const { count: resumeDownloads } = await supabase
-    .from('portfolio_events')
-    .select('*', { count: 'exact', head: true })
-    .eq('event_type', 'RESUME_DOWNLOAD');
+  const resumeDownloads = await getCount('portfolio_events', { event_type: 'RESUME_DOWNLOAD' });
 
   // Second Row
   // 1. Visitor Activity Timeline (We'll grab today's events + page views and process them on the client)
@@ -140,6 +122,7 @@ export default async function OpsOverview() {
 
   return (
     <OpsDashboardClient 
+      activeAdminSessions={activeAdminSessions || 0}
       activeVisitors={activeVisitors || 0}
       sessionsToday={sessionsToday || 0}
       visitorsThisWeek={visitorsThisWeek || 0}

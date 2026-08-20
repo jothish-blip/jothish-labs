@@ -1,0 +1,29 @@
+=== TEST 1: Open Website ===
+Visitor ID: f63e82a0-e614-4096-8b9e-b16fc834009f
+Session ID: c059b753-6e4e-4780-aa0a-1b3c650543c2
+DB Sessions for visitor after Test 1: 1
+Status: ACTIVE
+
+=== TEST 2: Navigate 20 Pages ===
+DB Sessions for visitor after Test 2: 1
+Page View Count: 21
+
+=== TEST 3: Refresh Browser ===
+DB Sessions for visitor after Test 3: 1
+
+=== TEST 4: Close browser, Wait 70s (Simulated) ===
+Status of Test 4 Session: EXPIRED
+
+=== TEST 5: Admin Login ===
+Active admin sessions after first login: 1
+
+=== TEST 6: Second Browser Login ===
+Active admin sessions after second login: 2
+Simulating heartbeat for Browser 2...
+Browser 1 expires_at: 2026-08-20T11:54:36.551+00:00
+Browser 2 expires_at: 2026-08-20T11:54:39.216+00:00
+Are they different? true
+
+=== TEST 7: Close Browser 1, Wait 30m ===
+Browser 1 Status: EXPIRED
+Browser 2 Status: ACTIVE

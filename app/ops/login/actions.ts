@@ -182,10 +182,18 @@ export async function login(formData: FormData) {
     details: { ...context, email, userId: adminId }
   });
 
-  const sessionToken = data.session?.access_token || crypto.randomUUID();
+  const cookieStore = await import('next/headers').then(m => m.cookies());
+  const existingSid = cookieStore.get('admin_sid')?.value;
+  if (existingSid && adminId) {
+    const { expireAdmin } = await import('@/lib/session-service');
+    await expireAdmin(existingSid, adminId);
+  }
+
+  const sessionToken = crypto.randomUUID();
   
   if (adminId) {
-    await supabaseAdmin.from('portfolio_admin_sessions').insert({
+    const { createAdminSession } = await import('@/lib/session-service');
+    await createAdminSession({
       admin_id: adminId,
       session_token: sessionToken,
       ip_address: context.ip,
@@ -194,7 +202,15 @@ export async function login(formData: FormData) {
       device: context.device,
       os: context.os,
       current_page: '/ops',
-      expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    });
+    
+    const cookieStore = await import('next/headers').then(m => m.cookies());
+    cookieStore.set('admin_sid', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/'
     });
   }
 
@@ -220,9 +236,13 @@ export async function logout() {
       details: { ...context, email: session.user.email, userId: session.user.id }
     });
 
-    await supabaseAdmin.from('portfolio_admin_sessions')
-      .update({ is_revoked: true, expires_at: new Date().toISOString() })
-      .eq('admin_id', session.user.id);
+    const cookieStore = await import('next/headers').then(m => m.cookies());
+    const adminSid = cookieStore.get('admin_sid')?.value;
+    
+    if (adminSid) {
+      const { expireAdmin } = await import('@/lib/session-service');
+      await expireAdmin(adminSid, session.user.id);
+    }
   }
 
   await supabase.auth.signOut();
@@ -231,6 +251,7 @@ export async function logout() {
   const cookieStore = await import('next/headers').then(m => m.cookies());
   cookieStore.delete('pf_vid');
   cookieStore.delete('pf_sid');
+  cookieStore.delete('admin_sid');
 
   redirect('/');
 }

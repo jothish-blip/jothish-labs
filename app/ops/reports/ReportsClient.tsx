@@ -2,11 +2,12 @@
 
 import { Download, FileText, Calendar, ShieldAlert, Activity, Users, Box, Mail, File as FileIcon, MapPin, Monitor } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+
 
 type ReportData = {
   generatedAt: string;
@@ -23,6 +24,14 @@ type ReportData = {
 export default function ReportsClient({ reportData, trafficData }: { reportData: ReportData, trafficData: { name: string, visitors: number, sessions: number }[] }) {
   const [downloading, setDownloading] = useState(false);
   const [exportFormat, setExportFormat] = useState<'CSV' | 'PDF' | 'EXCEL'>('CSV');
+  const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#14b8a6', '#6366f1'];
 
@@ -81,7 +90,6 @@ export default function ReportsClient({ reportData, trafficData }: { reportData:
   };
 
   const exportExcel = () => {
-    const wb = XLSX.utils.book_new();
     const ws_data = [
       ['Metric', 'Value'],
       ['Total Sessions (24h)', reportData.daily.visitors],
@@ -90,9 +98,15 @@ export default function ReportsClient({ reportData, trafficData }: { reportData:
       ['Total Sessions (30d)', reportData.monthly.totalSessions],
       ['Resume Downloads', reportData.resumeDownloads]
     ];
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-    XLSX.utils.book_append_sheet(wb, ws, 'Report');
-    XLSX.writeFile(wb, `soc_report_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
+    
+    const csvContent = ws_data.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.setAttribute('download', `soc_report_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (

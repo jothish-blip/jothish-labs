@@ -1,7 +1,9 @@
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { cookies, headers } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
+import { findActiveVisitorSession, createVisitorSession, updateVisitorSession } from '@/lib/session-service';
 
 function parseUserAgentDetailed(ua: string) {
   let browser = 'Unknown';
@@ -82,12 +84,12 @@ export async function POST(request: Request) {
 
     if (!visitorId) {
       visitorId = uuidv4();
-      newCookies.push({ name: 'pf_vid', value: visitorId, options: { maxAge: 60 * 60 * 24 * 365 * 2, path: '/' } }); // 2 years
+      newCookies.push({ name: 'pf_vid', value: visitorId, options: { maxAge: 60 * 60 * 24 * 365 * 2, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, httpOnly: false } }); // 2 years
     }
     
     if (!sessionId) {
       sessionId = uuidv4();
-      newCookies.push({ name: 'pf_sid', value: sessionId, options: { maxAge: 60 * 30, path: '/' } }); // 30 mins
+      newCookies.push({ name: 'pf_sid', value: sessionId, options: { maxAge: 60 * 30, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, httpOnly: false } }); // 30 mins
     }
 
     const supabase = await createAdminClient();
@@ -207,12 +209,8 @@ export async function POST(request: Request) {
       if (error) console.error('[Telemetry] Visitor Update Error:', error);
     }
 
-    // 3. Upsert Session
-    const sessionRes = await safeDbOperation(supabase
-      .from('portfolio_sessions')
-      .select('id, page_view_count, active_duration, idle_duration, created_at, last_ping_at')
-      .eq('session_id', sessionId)
-      .single());
+    // Phase 5: Prevent Duplicate Inserts
+    const activeSession = await findActiveVisitorSession(visitorId);
 
     const deviceSnapshot = {
       browser,
@@ -226,53 +224,31 @@ export async function POST(request: Request) {
       location: [city, region, country].filter(Boolean).join(', ') || 'Unknown'
     };
 
-    if (!sessionRes.data) {
-      const { error } = await supabase.from('portfolio_sessions').insert({
-        session_id: sessionId,
-        visitor_id: visitorId,
-        entry_page: path,
-        exit_page: path,
-        referrer: referrer,
-        device_snapshot: deviceSnapshot,
-        page_view_count: type === 'page_view' ? 1 : 0,
-        utm_source: utm_source,
-        utm_medium: utm_medium,
-        utm_campaign: utm_campaign
-      });
-      if (error) console.error('[Telemetry] Session Insert Error:', error);
+    if (activeSession) {
+      // YES -> UPDATE
+      const sessionData = activeSession as any;
+      await import('@/lib/session-service').then(m => m.processVisitorPing(sessionData.session_id, path || '/', type));
+      sessionId = sessionData.session_id;
+
     } else {
-      const sessionData = sessionRes.data as any;
-      const updates: any = { updated_at: new Date().toISOString() };
-      
+      // NO -> INSERT
       if (type === 'page_view') {
-        updates.page_view_count = (sessionData.page_view_count || 0) + 1;
-        updates.exit_page = path;
+        await createVisitorSession({
+          session_id: sessionId,
+          visitor_id: visitorId,
+          entry_page: path || '/',
+          exit_page: path || '/',
+          referrer: referrer,
+          device_snapshot: deviceSnapshot,
+          page_view_count: 1,
+          utm_source: utm_source,
+          utm_medium: utm_medium,
+          utm_campaign: utm_campaign,
+          last_ping_at: new Date().toISOString()
+        });
+      } else {
+        return NextResponse.json({ success: true, warning: 'Session not initialized yet' });
       }
-      
-      if (type === 'ping' || type === 'page_view') {
-        updates.exit_page = path; // Realtime current page
-        
-        const now = new Date();
-        const lastPing = sessionData.last_ping_at ? new Date(sessionData.last_ping_at) : new Date(sessionData.created_at);
-        const dt = Math.floor((now.getTime() - lastPing.getTime()) / 1000);
-        
-        let active = sessionData.active_duration || 0;
-        let idle = sessionData.idle_duration || 0;
-        
-        if (dt > 0 && dt <= 30) {
-           active += dt;
-        } else if (dt > 30) {
-           idle += dt;
-        }
-        
-        updates.active_duration = active;
-        updates.idle_duration = idle;
-        updates.total_duration = active + idle;
-        updates.last_ping_at = now.toISOString();
-      }
-      
-      const { error } = await supabase.from('portfolio_sessions').update(updates).eq('session_id', sessionId);
-      if (error) console.error('[Telemetry] Session Update Error:', error);
     }
 
     if (type === 'event' && eventName) {

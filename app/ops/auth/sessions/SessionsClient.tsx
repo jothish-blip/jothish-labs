@@ -22,15 +22,16 @@ type Session = {
   is_revoked: boolean;
 };
 
+import { revokeAdminSession } from './actions';
+
 export default function SessionsClient({ initialSessions }: { initialSessions: Session[] }) {
   const [sessions, setSessions] = useState(initialSessions);
-  const supabase = createClient();
   const router = useRouter();
 
-  const handleRevoke = async (id: string) => {
+  const handleRevoke = async (id: string, token: string, adminId: string) => {
     if (!confirm('Revoke this session? The user will be logged out immediately.')) return;
     
-    await supabase.from('portfolio_admin_sessions').update({ is_revoked: true }).eq('id', id);
+    await revokeAdminSession(token, adminId);
     setSessions(prev => prev.filter(s => s.id !== id));
     router.refresh();
   };
@@ -62,7 +63,7 @@ export default function SessionsClient({ initialSessions }: { initialSessions: S
                 </div>
                 <div className="flex items-center gap-2">
                   <button 
-                    onClick={() => handleRevoke(session.id)}
+                    onClick={() => handleRevoke(session.id, session.session_token, session.admin_id)}
                     className="p-1.5 text-muted hover:text-[#E4002B] hover:bg-[#E4002B]/10 rounded-sm transition-colors"
                     title="Force Logout / Revoke"
                   >

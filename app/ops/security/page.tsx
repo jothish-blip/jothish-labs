@@ -53,8 +53,9 @@ export default async function OpsSecurity() {
     .select('*')
     .gte('created_at', twentyFourHoursAgo);
 
-  const { count: failedLogins } = await supabase.from('portfolio_audit_logs').select('*', { count: 'exact', head: true }).eq('action', 'FAILED_LOGIN');
-  const { count: successfulLogins } = await supabase.from('portfolio_audit_logs').select('*', { count: 'exact', head: true }).eq('action', 'SUCCESSFUL_LOGIN');
+  const { getCount } = await import('@/lib/session-service');
+  const failedLogins = await getCount('portfolio_audit_logs', { action: 'FAILED_LOGIN' });
+  const successfulLogins = await getCount('portfolio_audit_logs', { action: 'SUCCESSFUL_LOGIN' });
 
   // Parse Failed Login Chains
   const failedLoginChains: Record<string, FailedLoginChain> = {};

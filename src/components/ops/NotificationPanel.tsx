@@ -43,13 +43,13 @@ export default function NotificationPanel() {
 
     const channel = supabase
       .channel(`public:portfolio_notifications_${crypto.randomUUID()}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_notifications' }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'portfolio_notifications' }, (payload: any) => {
         setNotifications(prev => [payload.new as Notification, ...prev]);
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'portfolio_notifications' }, (payload) => {
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'portfolio_notifications' }, (payload: any) => {
         setNotifications(prev => prev.map(n => n.id === payload.new.id ? (payload.new as Notification) : n));
       })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'portfolio_notifications' }, (payload) => {
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'portfolio_notifications' }, (payload: any) => {
         setNotifications(prev => prev.filter(n => n.id !== payload.old.id));
       })
       .subscribe();

@@ -27,22 +27,50 @@ export default function ContactsClient({ initialContacts }: { initialContacts: C
 
   useEffect(() => {
     const supabase = createClient();
-    const channelName = `contacts-channel-${crypto.randomUUID()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolio_contacts' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setContacts(prev => [{ ...payload.new, visitor: null } as any, ...prev]);
-        } else if (payload.eventType === 'UPDATE') {
-          setContacts(prev => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } : c));
-        } else if (payload.eventType === 'DELETE') {
-          setContacts(prev => prev.filter(c => c.id !== payload.old.id));
+    let retryCount = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let isComponentMounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    
+    const connectChannel = () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+      
+      channel = supabase
+        .channel('contacts-feed')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'portfolio_contacts' }, (payload: any) => {
+          if (!isComponentMounted) return;
+          if (payload.eventType === 'INSERT') {
+            setContacts(prev => [{ ...payload.new, visitor: null } as any, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setContacts(prev => prev.map(c => c.id === payload.new.id ? { ...c, ...payload.new } : c));
+          } else if (payload.eventType === 'DELETE') {
+            setContacts(prev => prev.filter(c => c.id !== payload.old.id));
+          }
+        });
+      
+      channel.subscribe((status: string) => {
+        if (!isComponentMounted) return;
+        if (status === 'SUBSCRIBED') {
+          retryCount = 0;
         }
-      })
-      .subscribe();
+        if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+          retryCount++;
+          const delay = Math.min(2000 * Math.pow(1.5, retryCount - 1), 30000);
+          retryTimer = setTimeout(() => {
+            if (isComponentMounted) connectChannel();
+          }, delay);
+        }
+      });
+    };
+
+    connectChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isComponentMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 

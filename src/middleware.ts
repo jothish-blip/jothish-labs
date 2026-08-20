@@ -60,10 +60,15 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options: CookieOptions) {
+          const cookieOptions = {
+            ...options,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+          };
           request.cookies.set({
             name,
             value,
-            ...options,
+            ...cookieOptions,
           });
           response = NextResponse.next({
             request: {
@@ -73,14 +78,19 @@ export async function middleware(request: NextRequest) {
           response.cookies.set({
             name,
             value,
-            ...options,
+            ...cookieOptions,
           });
         },
         remove(name: string, options: CookieOptions) {
+          const cookieOptions = {
+            ...options,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+          };
           request.cookies.set({
             name,
             value: '',
-            ...options,
+            ...cookieOptions,
           });
           response = NextResponse.next({
             request: {
@@ -90,7 +100,7 @@ export async function middleware(request: NextRequest) {
           response.cookies.set({
             name,
             value: '',
-            ...options,
+            ...cookieOptions,
           });
         },
       },
@@ -107,7 +117,15 @@ export async function middleware(request: NextRequest) {
     if (!user) {
       if (!isAuthRoute) {
         const redirectUrl = new URL('/ops/login', request.url);
-        return NextResponse.redirect(redirectUrl);
+        const redirectResponse = NextResponse.redirect(redirectUrl);
+        response.cookies.getAll().forEach((c) => {
+          redirectResponse.cookies.set(c.name, c.value, {
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            path: '/',
+          });
+        });
+        return redirectResponse;
       }
     } else {
       // User has a session.
@@ -137,12 +155,28 @@ export async function middleware(request: NextRequest) {
           // Allow them to be on the login or MFA page to complete authentication
         } else {
           // If they try to access the dashboard directly without finishing MFA, send them back to the login page to start over
-          return NextResponse.redirect(new URL('/ops/login', request.url));
+          const redirectResponse = NextResponse.redirect(new URL('/ops/login', request.url));
+          response.cookies.getAll().forEach((c) => {
+          redirectResponse.cookies.set(c.name, c.value, {
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            path: '/',
+          });
+        });
+          return redirectResponse;
         }
       } else {
         // MFA is fulfilled (or not strictly enforced and no AAL2 set)
         if (isAuthRoute || isMfaRoute) {
-          return NextResponse.redirect(new URL('/ops', request.url));
+          const redirectResponse = NextResponse.redirect(new URL('/ops', request.url));
+          response.cookies.getAll().forEach((c) => {
+          redirectResponse.cookies.set(c.name, c.value, {
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax' as const,
+            path: '/',
+          });
+        });
+          return redirectResponse;
         }
       }
     }

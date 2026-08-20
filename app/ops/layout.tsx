@@ -24,8 +24,19 @@ export default function OpsLayout({
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    
+    // Admin Session Heartbeat (every 60s)
+    const heartbeat = setInterval(() => {
+      if (document.visibilityState === 'visible' && !pathname.startsWith('/ops/login')) {
+        fetch('/api/ops/heartbeat', { method: 'POST', keepalive: true }).catch(() => {});
+      }
+    }, 60000);
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearInterval(heartbeat);
+    };
+  }, [pathname]);
 
   if (pathname.startsWith('/ops/login')) {
     return <>{children}</>;
