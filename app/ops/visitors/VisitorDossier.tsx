@@ -5,7 +5,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { 
   Terminal, FileText, LayoutDashboard, Shield, 
   MapPin, Monitor, Globe, Clock, Activity, 
-  ArrowLeftRight, Search, Mail, Eye
+  ArrowLeftRight, Search, Mail, Eye, User
 } from 'lucide-react';
 import { VscLoading } from 'react-icons/vsc';
 import SessionDossier from './SessionDossier';
@@ -190,13 +190,22 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-surface pb-6 mb-6 gap-4">
           <div>
             <h2 className="text-sm font-mono text-muted uppercase tracking-widest mb-1">
-              Visitor Dossier: <span className="text-foreground">{visitor.visitor_id}</span>
+              Visitor Dossier: <span className="text-foreground">{visitor.visitor_name && visitor.visitor_name !== 'Anonymous' ? visitor.visitor_name : `VIS-${visitor.visitor_id.substring(0, 6).toUpperCase()}`}</span>
             </h2>
             <p className="text-[10px] text-muted font-mono tracking-widest uppercase">
-              Profile Generated: {format(new Date(), 'HH:mm:ss')}
+              ID: {visitor.visitor_id} · Profile Generated: {format(new Date(), 'HH:mm:ss')}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(visitorId);
+              }}
+              className="px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+              title="Copy full Visitor ID"
+            >
+              Copy ID
+            </button>
             <button
               onClick={handleBlockToggle}
               disabled={blocking}
@@ -209,50 +218,137 @@ export default function VisitorDossier({ visitorId, onBack }: { visitorId: strin
               <Shield size={10} className="inline-block mr-1 -mt-0.5" />
               {blocking ? 'Processing...' : isBlocked ? 'Unblock Visitor' : 'Block Visitor'}
             </button>
+            <button
+              onClick={async () => {
+                if (window.confirm("Are you sure you want to permanently delete this visitor's logs? This will delete all sessions, page views, events, and tracking metadata. This action cannot be undone. Block records will be preserved.")) {
+                  setBlocking(true);
+                  try {
+                    const res = await fetch(`/api/ops/visitors/${visitorId}/delete-logs`, { method: 'DELETE' });
+                    if (res.ok) {
+                      onBack(); // Go back to list
+                    } else {
+                      alert('Failed to delete logs');
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setBlocking(false);
+                  }
+                }
+              }}
+              disabled={blocking}
+              className="px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border border-red-500/30 bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+            >
+              Delete Visitor Logs
+            </button>
             <div className={`px-3 py-1.5 rounded-sm font-mono text-[9px] uppercase tracking-widest border ${
-               new Date().getTime() - new Date(visitor.last_visit).getTime() < 60 * 1000 
+               new Date().getTime() - new Date(visitor.last_visit).getTime() < 30 * 60 * 1000 
                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' 
                  : 'bg-surface/30 text-muted border-surface-strong'
             }`}>
-              {new Date().getTime() - new Date(visitor.last_visit).getTime() < 60 * 1000 ? '● ONLINE' : 'OFFLINE'}
+              {new Date().getTime() - new Date(visitor.last_visit).getTime() < 30 * 60 * 1000 ? '● ONLINE' : 'OFFLINE'}
             </div>
           </div>
         </div>
         
-        {/* General Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-2">
-            <Clock size={14} className="text-muted" />
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted">First Seen</p>
-            <p className="text-sm text-foreground font-mono">{format(new Date(visitor.first_visit), 'PP pp')}</p>
-          </div>
-          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-2">
-            <Activity size={14} className="text-[#E4002B]" />
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted">Total Visits</p>
-            <p className="text-xl text-foreground font-mono">{visitor.total_visits}</p>
-          </div>
-          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-2">
-            <Monitor size={14} className="text-muted" />
-            <p className="text-[10px] font-mono uppercase tracking-widest text-muted">Environment</p>
-            <p className="text-xs text-foreground font-mono truncate" title={`${visitor.browser} ${visitor.browser_version}`}>
-              {visitor.browser || 'Unknown'} {visitor.browser_version !== 'Unknown' && <span className="text-[10px] text-muted">{visitor.browser_version}</span>}
-            </p>
-            <p className="text-[10px] text-muted font-mono mt-1">
-              {visitor.device_type} / {visitor.os} {visitor.os_version !== 'Unknown' && visitor.os_version}
-            </p>
-          </div>
-          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-2">
-            <MapPin size={14} className="text-muted" />
-            <div className="flex justify-between items-center">
-              <p className="text-[10px] font-mono uppercase tracking-widest text-muted">Network & Geo</p>
-              <p className="text-[9px] font-mono text-emerald-500">{visitor.public_ip || '127.0.0.1'}</p>
+        {/* Detailed Panels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          
+          {/* Identity Panel */}
+          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-3">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-muted border-b border-surface pb-2 flex items-center gap-2"><User size={12}/> Identity</h3>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-mono">
+              <div><p className="text-[9px] text-muted uppercase">Visitor ID</p><p className="truncate" title={visitor.visitor_id}>{visitor.visitor_id.substring(0,8)}...</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Status</p><p className={new Date().getTime() - new Date(visitor.last_visit).getTime() < 30 * 60 * 1000 ? 'text-emerald-500' : 'text-muted'}>{new Date().getTime() - new Date(visitor.last_visit).getTime() < 30 * 60 * 1000 ? 'Online' : 'Offline'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">First Seen</p><p>{format(new Date(visitor.first_visit), 'MMM d, yy HH:mm')}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Last Seen</p><p>{format(new Date(visitor.last_visit), 'MMM d, yy HH:mm')}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Consent Status</p><p className={visitor.policy_accepted ? 'text-emerald-500' : 'text-amber-500'}>{visitor.policy_accepted ? 'Accepted' : 'Not Provided'}</p></div>
             </div>
-            <p className="text-sm text-foreground font-mono truncate" title={visitor.region ? `${visitor.city}, ${visitor.region}` : visitor.city}>
-              {visitor.city ? `${visitor.city}, ` : ''}{visitor.country || 'Unknown Location'}
-            </p>
-            <p className="text-[10px] text-muted font-mono truncate" title={visitor.isp}>
-              {visitor.isp ? `ISP: ${visitor.isp}` : (visitor.timezone || 'Unknown Timezone')}
-            </p>
+          </div>
+
+          {/* Device Panel */}
+          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-3">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-muted border-b border-surface pb-2 flex items-center gap-2"><Monitor size={12}/> Device</h3>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-mono">
+              <div><p className="text-[9px] text-muted uppercase">Browser</p><p>{visitor.browser || 'N/A'} {visitor.browser_version}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">OS / Platform</p><p>{visitor.os || 'N/A'} {visitor.os_version} / {visitor.platform || 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Device Type</p><p>{visitor.device_type || 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Manufacturer</p><p>{visitor.manufacturer || 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Screen & Color</p><p>{visitor.screen_resolution || 'N/A'} @ {visitor.color_depth ? `${visitor.color_depth}-bit` : 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Language & TZ</p><p className="truncate" title={`${visitor.language} / ${visitor.timezone}`}>{visitor.language || 'N/A'} / {visitor.timezone ? visitor.timezone.split('/')[1] : 'N/A'}</p></div>
+            </div>
+          </div>
+
+          {/* Network Panel */}
+          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-3">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-muted border-b border-surface pb-2 flex items-center gap-2"><Globe size={12}/> Network</h3>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-mono">
+              <div><p className="text-[9px] text-muted uppercase">IP Address</p><p className="text-emerald-500">{visitor.public_ip || 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">ISP / ASN</p><p className="truncate" title={visitor.isp}>{visitor.isp || 'N/A'} {visitor.asn ? `(${visitor.asn})` : ''}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Country</p><p>{visitor.country || 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Region</p><p>{visitor.region || 'N/A'}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">City</p><p>{visitor.city || 'N/A'}</p></div>
+            </div>
+          </div>
+
+          {/* Session Summary Panel */}
+          <div className="bg-background border border-surface p-4 rounded-sm flex flex-col gap-3">
+            <h3 className="text-[10px] font-mono uppercase tracking-widest text-muted border-b border-surface pb-2 flex items-center gap-2"><Activity size={12}/> Session Statistics</h3>
+            <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs font-mono">
+              <div><p className="text-[9px] text-muted uppercase">Total Sessions</p><p>{visitor.total_visits || 0}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Total Time Spent</p><p>{formatTime(visitor.total_time_spent || 0)}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Avg Session</p><p>{formatTime(avgDuration)}</p></div>
+              <div><p className="text-[9px] text-muted uppercase">Bounce Rate</p><p>{bounceRate}%</p></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Privacy & Consent Panel */}
+        <div className="mb-6 border border-surface bg-background p-5 rounded-sm">
+          <h3 className="text-[10px] font-mono text-muted uppercase tracking-widest mb-4 flex items-center gap-2">
+            <Shield size={12} /> Privacy & Consent Profile
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+            <div className="bg-surface/10 border border-surface p-3 rounded-sm flex flex-col gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted">Visitor Name</p>
+              <p className="text-xs font-mono text-foreground truncate" title={visitor.visitor_name || 'Anonymous'}>
+                {visitor.visitor_name && visitor.visitor_name !== 'Anonymous'
+                  ? visitor.visitor_name
+                  : <span className="text-muted italic">Anonymous</span>}
+              </p>
+            </div>
+            <div className="bg-surface/10 border border-surface p-3 rounded-sm flex flex-col gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted">Policy Consent</p>
+              <p className={`text-xs font-mono font-semibold ${visitor.policy_accepted ? 'text-emerald-500' : 'text-amber-500/80'}`}>
+                {visitor.policy_accepted ? 'Accepted' : 'Not Provided'}
+              </p>
+            </div>
+            <div className="bg-surface/10 border border-surface p-3 rounded-sm flex flex-col gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted">Cookie Consent</p>
+              <p className={`text-xs font-mono font-semibold ${visitor.cookie_consent ? 'text-emerald-500' : 'text-amber-500/80'}`}>
+                {visitor.cookie_consent ? 'Accepted' : 'Not Provided'}
+              </p>
+            </div>
+            <div className="bg-surface/10 border border-surface p-3 rounded-sm flex flex-col gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted">Accepted At</p>
+              <p className="text-xs font-mono text-foreground">
+                {visitor.accepted_at
+                  ? format(new Date(visitor.accepted_at), 'dd MMM yyyy')
+                  : <span className="text-muted">—</span>}
+              </p>
+            </div>
+            <div className="bg-surface/10 border border-surface p-3 rounded-sm flex flex-col gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted">Policy Ver.</p>
+              <p className="text-xs font-mono text-foreground">
+                {visitor.policy_version ? `v${visitor.policy_version}` : <span className="text-muted">—</span>}
+              </p>
+            </div>
+            <div className="bg-surface/10 border border-surface p-3 rounded-sm flex flex-col gap-1">
+              <p className="text-[9px] font-mono uppercase tracking-widest text-muted">Cookie Ver.</p>
+              <p className="text-xs font-mono text-foreground">
+                {visitor.cookie_version ? `v${visitor.cookie_version}` : <span className="text-muted">—</span>}
+              </p>
+            </div>
           </div>
         </div>
 

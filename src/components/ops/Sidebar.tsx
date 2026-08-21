@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 const ALL_NAV_ITEMS = [
   { id: 'overview', href: '/ops', label: 'Overview', icon: LayoutDashboard },
   { id: 'visitors', href: '/ops/visitors', label: 'Visitor Intel', icon: Users },
+  { id: 'sessions', href: '/ops/sessions', label: 'Sessions', icon: Activity },
+  { id: 'blocked', href: '/ops/visitors/blocked', label: 'Blocked Visitors', icon: ShieldAlert },
   { id: 'contacts', href: '/ops/contacts', label: 'Contacts', icon: MessageSquare },
   { id: 'security', href: '/ops/security', label: 'Security', icon: ShieldAlert },
   { id: 'auth', href: '/ops/auth', label: 'Access Control', icon: Lock },

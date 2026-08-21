@@ -47,23 +47,15 @@ export async function sweepExpiredSessions() {
   const supabase = await createAdminClient();
   const now = Date.now();
   
-  // 1. Visitor Sessions: ACTIVE -> IDLE (No ping for >30s)
-  const thirtySecAgoStr = new Date(now - 30000).toISOString();
+  // 1. Visitor Sessions: ACTIVE -> EXPIRED (No ping for >30m)
+  const thirtyMinAgoStr = new Date(now - 30 * 60000).toISOString();
   await supabase
     .from('portfolio_sessions')
-    .update({ status: 'IDLE' })
-    .eq('status', 'ACTIVE')
-    .lt('last_ping_at', thirtySecAgoStr);
+    .update({ status: 'EXPIRED', session_end_time: new Date().toISOString() })
+    .in('status', ['ACTIVE', 'IDLE', 'CREATED'])
+    .lt('last_ping_at', thirtyMinAgoStr);
 
-  // 2. Visitor Sessions: IDLE/ACTIVE -> EXPIRED (No ping for >60s)
-  const sixtySecAgoStr = new Date(now - 60000).toISOString();
-  await supabase
-    .from('portfolio_sessions')
-    .update({ status: 'EXPIRED' })
-    .in('status', ['ACTIVE', 'IDLE'])
-    .lt('last_ping_at', sixtySecAgoStr);
-
-  // 3. Admin Sessions: ACTIVE -> IDLE (No activity for >15m)
+  // 2. Admin Sessions: ACTIVE -> IDLE (No activity for >15m)
   const fifteenMinAgoStr = new Date(now - 15 * 60000).toISOString();
   await supabase
     .from('portfolio_admin_sessions')
@@ -71,7 +63,7 @@ export async function sweepExpiredSessions() {
     .eq('status', 'ACTIVE')
     .lt('last_activity_at', fifteenMinAgoStr);
 
-  // 4. Admin Sessions: IDLE/ACTIVE -> EXPIRED (expires_at < NOW())
+  // 3. Admin Sessions: IDLE/ACTIVE -> EXPIRED (expires_at < NOW())
   await supabase
     .from('portfolio_admin_sessions')
     .update({ status: 'EXPIRED' })
@@ -87,7 +79,7 @@ export async function findActiveVisitorSession(visitorId: string) {
     .from('portfolio_sessions')
     .select('*')
     .eq('visitor_id', visitorId)
-    .in('status', ['ACTIVE', 'IDLE'])
+    .in('status', ['ACTIVE', 'IDLE', 'CREATED'])
     .order('created_at', { ascending: false })
     .limit(1)
     .single();
@@ -97,23 +89,17 @@ export async function findActiveVisitorSession(visitorId: string) {
 
 export async function createVisitorSession(payload: any) {
   const supabase = await createAdminClient();
+  payload.status = 'ACTIVE';
+  payload.session_start_time = new Date().toISOString();
   
-  // Atomic-like UPSERT to prevent race condition
-  // Set status to CREATED first.
-  payload.status = 'CREATED';
   const { error } = await supabase.from('portfolio_sessions').insert(payload);
   
   if (error) {
      if (error.code === '23505') {
-       // Unique violation, ignore because the other thread succeeded
        console.log('[session-service] duplicate visitor session insert prevented.');
        return;
      }
      console.error('[session-service] createVisitorSession error:', error);
-  }
-  
-  if (!error && payload.session_id) {
-     await supabase.from('portfolio_sessions').update({ status: 'ACTIVE' }).eq('session_id', payload.session_id);
   }
 }
 
@@ -160,25 +146,50 @@ export async function processVisitorPing(sessionId: string, path: string, type: 
     const dt = Math.floor((now.getTime() - lastPing.getTime()) / 1000);
     
     let active = sessionData.active_duration || 0;
-    let idle = sessionData.idle_duration || 0;
     
-    if (dt > 0 && dt <= 30) {
+    // As long as the ping is within the 30 min window, we add it to active duration
+    if (dt > 0 && dt <= 30 * 60) {
        active += dt;
-    } else if (dt > 30 && dt <= 60) {
-       idle += dt;
     }
     
     updates.active_duration = active;
-    updates.idle_duration = idle;
-    updates.total_duration = active + idle;
+    updates.total_duration = active; // We are removing idle_duration logic for visitors
+    updates.session_duration = active; // Using the new column
     updates.last_ping_at = now.toISOString();
   }
-
-  if (type === 'page_exit' || type === 'visibility_hidden') {
-    updates.status = 'EXPIRED';
-  }
+  
+  // Do NOT mark as expired on page_exit or visibility_hidden. 
+  // Let the 30-minute timeout handle expiration.
   
   await updateVisitorSession(sessionId, updates);
+}
+
+export async function blockVisitor(visitorId: string, ipAddress: string, reason: string, adminId: string, cookieId?: string, deviceFingerprint?: string) {
+    const supabase = await createAdminClient();
+    const { error } = await supabase.from('portfolio_blocked_visitors').insert({
+        visitor_id: visitorId,
+        ip_address: ipAddress,
+        reason: reason,
+        blocked_by: adminId,
+        cookie_id: cookieId,
+        device_fingerprint: deviceFingerprint
+    });
+    if (error) console.error('[session-service] blockVisitor:', error);
+}
+
+export async function unblockVisitor(visitorId: string) {
+    const supabase = await createAdminClient();
+    const { error } = await supabase.from('portfolio_blocked_visitors').delete().eq('visitor_id', visitorId);
+    if (error) console.error('[session-service] unblockVisitor:', error);
+}
+
+export async function deleteVisitorLogs(visitorId: string) {
+    const supabase = await createAdminClient();
+    // Since we set ON DELETE CASCADE, deleting the visitor will delete sessions, page_views, events.
+    // It will NOT delete blocked records since blocked_visitors doesn't cascade to visitors (or if it does, we should prevent it).
+    // Actually, portfolio_blocked_visitors does NOT have a foreign key to portfolio_visitors to prevent deletion cascade.
+    const { error } = await supabase.from('portfolio_visitors').delete().eq('visitor_id', visitorId);
+    if (error) console.error('[session-service] deleteVisitorLogs:', error);
 }
 
 export async function createAdminSession(payload: any) {

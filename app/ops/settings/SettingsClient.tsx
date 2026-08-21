@@ -1,6 +1,6 @@
 'use client';
 
-import { Shield, Activity, Lock, Save, Bell, Globe } from 'lucide-react';
+import { Save, Clock, Users, Database, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { saveSettingsAction } from './actions';
@@ -8,15 +8,14 @@ import { saveSettingsAction } from './actions';
 export default function SettingsClient({ initialConfig }: { initialConfig: Record<string, string> }) {
   const [config, setConfig] = useState(initialConfig);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('general');
-  const supabase = createClient();
+  const [activeTab, setActiveTab] = useState('sessions');
 
   const handleSave = async () => {
     setSaving(true);
     
     const updates = Object.entries(config).map(([key, value]) => ({
       key,
-      value: typeof value === 'string' ? `"${value}"` : value, // Wrap in quotes if it's a raw string to be valid JSON
+      value: typeof value === 'string' ? `"${value}"` : value,
       category: activeTab
     }));
     
@@ -30,16 +29,24 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
     setTimeout(() => setSaving(false), 500);
   };
 
+  const handleCleanup = async () => {
+    if (!window.confirm('Are you sure you want to run manual log cleanup now?')) return;
+    try {
+      const res = await fetch('/api/ops/system/cleanup', { method: 'POST' });
+      if (res.ok) alert('Cleanup successful');
+    } catch (e) {
+      alert('Cleanup failed');
+    }
+  };
+
   const handleChange = (key: string, value: string) => {
     setConfig(prev => ({ ...prev, [key]: value }));
   };
 
   const tabs = [
-    { id: 'general', label: 'General', icon: Globe },
-    { id: 'security', label: 'Security', icon: Shield },
-    { id: 'telemetry', label: 'Telemetry', icon: Activity },
-    { id: 'notifications', label: 'Alerts', icon: Bell },
-
+    { id: 'sessions', label: 'Sessions & Cookies', icon: Clock },
+    { id: 'visitors', label: 'Visitor Management', icon: Users },
+    { id: 'logs', label: 'Log Retention', icon: Database },
   ];
 
   return (
@@ -47,10 +54,10 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
       <header className="mb-6 border-b border-surface pb-6 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight uppercase text-foreground">
-            SOC Configuration
+            System Settings
           </h1>
           <p className="text-muted text-sm font-mono mt-2 tracking-widest uppercase">
-            System Preferences & Security Policies
+            Visitor & Session Controls
           </p>
         </div>
         <button 
@@ -64,7 +71,6 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
 
       <div className="flex flex-col lg:flex-row gap-8 flex-1">
         
-        {/* Settings Navigation Sidebar */}
         <div className="w-full lg:w-64 shrink-0">
            <nav className="flex flex-col gap-1">
               {tabs.map(tab => (
@@ -82,86 +88,121 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
            </nav>
         </div>
 
-        {/* Settings Content Area */}
         <div className="flex-1 bg-surface/5 border border-surface rounded-sm p-8 min-h-[500px]">
            
-           {activeTab === 'general' && (
+           {activeTab === 'sessions' && (
              <div className="space-y-8 max-w-2xl animate-in fade-in">
                 <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-foreground mb-6 border-b border-surface pb-2 flex items-center gap-2">
-                  <Globe size={16} className="text-blue-500" /> General Configuration
-                </h2>
-                
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-mono text-muted uppercase tracking-widest mb-2">Site Name</label>
-                    <input type="text" value={config['site_name'] || 'Jothish Portfolio'} onChange={(e) => handleChange('site_name', e.target.value)} className="w-full bg-background border border-surface rounded-sm px-4 py-2 text-xs font-mono text-foreground focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono text-muted uppercase tracking-widest mb-2">Maintenance Mode</label>
-                    <select value={config['maintenance_mode'] || 'false'} onChange={(e) => handleChange('maintenance_mode', e.target.value)} className="w-full bg-background border border-surface rounded-sm px-4 py-2 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="false">Disabled (Live)</option>
-                      <option value="true">Enabled (Offline)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono text-muted uppercase tracking-widest mb-2">Support Email</label>
-                    <input type="email" value={config['support_email'] || 'admin@portfolio.local'} onChange={(e) => handleChange('support_email', e.target.value)} className="w-full bg-background border border-surface rounded-sm px-4 py-2 text-xs font-mono text-foreground focus:outline-none" />
-                  </div>
-                </div>
-             </div>
-           )}
-
-           {activeTab === 'security' && (
-             <div className="space-y-8 max-w-2xl animate-in fade-in">
-                <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-foreground mb-6 border-b border-surface pb-2 flex items-center gap-2">
-                  <Lock size={16} className="text-[#E4002B]" /> Security Policies
+                  <Clock size={16} className="text-blue-500" /> Session Settings
                 </h2>
                 
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-surface/50 pb-4">
                     <div>
-                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Enforce AAL2 (MFA)</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Require multi-factor authentication for /ops</p>
-                    </div>
-                    <select value={config['enforce_mfa'] || 'strict'} onChange={(e) => handleChange('enforce_mfa', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="strict">Strict Mode (Required)</option>
-                      <option value="optional">Optional</option>
-                      <option value="disabled">Disabled</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
-                    <div>
-                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Brute Force Protection</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Lock account after failed attempts</p>
-                    </div>
-                    <select value={config['brute_force_limit'] || '5'} onChange={(e) => handleChange('brute_force_limit', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="3">3 Attempts</option>
-                      <option value="5">5 Attempts</option>
-                      <option value="10">10 Attempts</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
-                    <div>
                       <p className="text-sm font-mono text-foreground uppercase tracking-widest">Session Timeout</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Auto-logout after inactivity</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Inactivity timeout before expiration</p>
                     </div>
                     <select value={config['session_timeout'] || '30'} onChange={(e) => handleChange('session_timeout', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
                       <option value="15">15 Minutes</option>
                       <option value="30">30 Minutes</option>
                       <option value="60">1 Hour</option>
-                      <option value="never">Never</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Auto Extend Sessions</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Extend session timeout on activity</p>
+                    </div>
+                    <select value={config['auto_extend'] || 'true'} onChange={(e) => handleChange('auto_extend', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="true">On</option>
+                      <option value="false">Off</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Cookie Lifetime</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">How long the persistent cookie lives</p>
+                    </div>
+                    <select value={config['cookie_lifetime'] || '730'} onChange={(e) => handleChange('cookie_lifetime', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="1">1 Day</option>
+                      <option value="30">30 Days</option>
+                      <option value="365">1 Year</option>
+                      <option value="730">2 Years</option>
                     </select>
                   </div>
                   
+                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Secure Cookies</p>
+                    </div>
+                    <select value={config['secure_cookies'] || 'true'} onChange={(e) => handleChange('secure_cookies', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="true">Enabled (HTTPS only)</option>
+                      <option value="false">Disabled (HTTP allowed)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">HttpOnly Cookies</p>
+                    </div>
+                    <select value={config['httponly_cookies'] || 'true'} onChange={(e) => handleChange('httponly_cookies', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="true">Enabled (No JS access)</option>
+                      <option value="false">Disabled</option>
+                    </select>
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Audit Logging</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Record all mutations to portfolio_audit_logs</p>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">SameSite Policy</p>
                     </div>
-                    <select value={config['audit_logging'] || 'true'} onChange={(e) => handleChange('audit_logging', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="true">Enabled (Strict)</option>
+                    <select value={config['samesite_policy'] || 'lax'} onChange={(e) => handleChange('samesite_policy', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="lax">Lax</option>
+                      <option value="strict">Strict</option>
+                      <option value="none">None</option>
+                    </select>
+                  </div>
+                </div>
+             </div>
+           )}
+
+           {activeTab === 'visitors' && (
+             <div className="space-y-8 max-w-2xl animate-in fade-in">
+                <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-foreground mb-6 border-b border-surface pb-2 flex items-center gap-2">
+                  <Users size={16} className="text-[#E4002B]" /> Visitor Management
+                </h2>
+                
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Enable Visitor Blocking</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Allow blocking malicious visitors</p>
+                    </div>
+                    <select value={config['visitor_blocking'] || 'true'} onChange={(e) => handleChange('visitor_blocking', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="true">Enabled</option>
+                      <option value="false">Disabled</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Enable Visitor Tracking</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Collect analytics and behavior data</p>
+                    </div>
+                    <select value={config['visitor_tracking'] || 'true'} onChange={(e) => handleChange('visitor_tracking', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="true">Enabled</option>
+                      <option value="false">Disabled</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Device Fingerprinting</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Use fingerprinting for identity</p>
+                    </div>
+                    <select value={config['device_fingerprinting'] || 'false'} onChange={(e) => handleChange('device_fingerprinting', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="true">Enabled</option>
                       <option value="false">Disabled</option>
                     </select>
                   </div>
@@ -169,74 +210,37 @@ export default function SettingsClient({ initialConfig }: { initialConfig: Recor
              </div>
            )}
 
-           {activeTab === 'telemetry' && (
+           {activeTab === 'logs' && (
              <div className="space-y-8 max-w-2xl animate-in fade-in">
                 <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-foreground mb-6 border-b border-surface pb-2 flex items-center gap-2">
-                  <Activity size={16} className="text-emerald-500" /> Telemetry & Tracking
+                  <Database size={16} className="text-emerald-500" /> Log Retention
                 </h2>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between border-b border-surface/50 pb-4">
                     <div>
-                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Global Telemetry</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Collect anonymous visitor data</p>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Auto Delete Expired Logs</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Retention period for session logs</p>
                     </div>
-                    <select value={config['telemetry_enabled'] || 'true'} onChange={(e) => handleChange('telemetry_enabled', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="true">Enabled</option>
-                      <option value="false">Disabled</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-surface/50 pb-4">
-                    <div>
-                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Session Tracking</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Track journey paths across portfolio</p>
-                    </div>
-                    <select value={config['session_tracking'] || 'true'} onChange={(e) => handleChange('session_tracking', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="true">Enabled</option>
-                      <option value="false">Disabled</option>
+                    <select value={config['log_retention'] || '30'} onChange={(e) => handleChange('log_retention', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
+                      <option value="7">7 Days</option>
+                      <option value="30">30 Days</option>
+                      <option value="90">90 Days</option>
+                      <option value="forever">Keep Forever</option>
                     </select>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Data Retention</p>
-                      <p className="text-[10px] font-mono text-muted uppercase mt-1">How long to store telemetry data</p>
+                      <p className="text-sm font-mono text-foreground uppercase tracking-widest">Manual Cleanup</p>
+                      <p className="text-[10px] font-mono text-muted uppercase mt-1">Force delete expired session logs now</p>
                     </div>
-                    <select value={config['data_retention'] || '30'} onChange={(e) => handleChange('data_retention', e.target.value)} className="bg-background border border-surface rounded-sm px-3 py-1 text-xs font-mono text-foreground focus:outline-none">
-                      <option value="30">30 Days</option>
-                      <option value="90">90 Days</option>
-                      <option value="365">1 Year</option>
-                      <option value="forever">Forever</option>
-                    </select>
+                    <button onClick={handleCleanup} className="bg-red-500/10 text-red-500 border border-red-500/30 px-4 py-2 rounded-sm font-mono text-[10px] uppercase tracking-widest hover:bg-red-500/20 transition-colors">
+                      Run Cleanup
+                    </button>
                   </div>
                 </div>
              </div>
            )}
-
-           {activeTab === 'notifications' && (
-             <div className="space-y-8 max-w-2xl animate-in fade-in">
-                <h2 className="text-sm font-mono tracking-[0.2em] uppercase text-foreground mb-6 border-b border-surface pb-2 flex items-center gap-2">
-                  <Bell size={16} className="text-amber-500" /> Notifications & Alerts
-                </h2>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={config['alert_failed_logins'] !== 'false'} onChange={(e) => handleChange('alert_failed_logins', e.target.checked.toString())} className="accent-foreground" />
-                    <span className="text-xs font-mono text-foreground uppercase tracking-widest">Alert on failed logins</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={config['alert_contact'] !== 'false'} onChange={(e) => handleChange('alert_contact', e.target.checked.toString())} className="accent-foreground" />
-                    <span className="text-xs font-mono text-foreground uppercase tracking-widest">Alert on new contact messages</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <input type="checkbox" checked={config['alert_digest'] === 'true'} onChange={(e) => handleChange('alert_digest', e.target.checked.toString())} className="accent-foreground" />
-                    <span className="text-xs font-mono text-foreground uppercase tracking-widest">Receive Daily Digest Email</span>
-                  </div>
-                </div>
-             </div>
-           )}
-
-
-
         </div>
       </div>
     </div>

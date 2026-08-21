@@ -3,8 +3,8 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ThemeInit from "@/components/ThemeInit";
-import Navbar from "@/components/ui/Navbar";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import ConsentSystem from "@/components/ConsentSystem";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -106,6 +106,7 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <AnalyticsTracker />
           </Suspense>
+          <ConsentSystem />
           {children}
         </div>
 
