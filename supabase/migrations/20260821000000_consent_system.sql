@@ -1,0 +1,7 @@
+ALTER TABLE public.portfolio_visitors
+ADD COLUMN IF NOT EXISTS visitor_name TEXT,
+ADD COLUMN IF NOT EXISTS cookie_consent BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS policy_accepted BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS accepted_at TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS policy_version TEXT,
+ADD COLUMN IF NOT EXISTS cookie_version TEXT;

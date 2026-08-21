@@ -73,6 +73,7 @@ export default function AnalyticsTracker() {
             screen: `${window.screen.width}x${window.screen.height}`,
             screen_width: window.screen.width,
             screen_height: window.screen.height,
+            color_depth: window.screen.colorDepth,
             dpr,
             orientation,
             language: navigator.language,

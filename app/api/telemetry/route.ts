@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/utils/supabase/server';
 import { v4 as uuidv4 } from 'uuid';
 import { cookies, headers } from 'next/headers';
-import { createClient } from '@/utils/supabase/server';
 import { findActiveVisitorSession, createVisitorSession, updateVisitorSession } from '@/lib/session-service';
 
 function parseUserAgentDetailed(ua: string) {
@@ -89,7 +88,8 @@ export async function POST(request: Request) {
     
     if (!sessionId) {
       sessionId = uuidv4();
-      newCookies.push({ name: 'pf_sid', value: sessionId, options: { maxAge: 60 * 30, path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, httpOnly: false } }); // 30 mins
+      // Session cookie (no maxAge), it expires when browser closes, but backend tracks actual 30 min idle time
+      newCookies.push({ name: 'pf_sid', value: sessionId, options: { path: '/', secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, httpOnly: false } }); 
     }
 
     const supabase = await createAdminClient();
@@ -114,17 +114,14 @@ export async function POST(request: Request) {
 
     // 1. Check if visitor is blocked
     const blockedRes = await safeDbOperation(supabase
-      .from('portfolio_blocked_ips')
-      .select('id, expires_at')
-      .eq('ip_address', ip)
-      .single()
+      .from('portfolio_blocked_visitors')
+      .select('id')
+      .or(`ip_address.eq.${ip},visitor_id.eq.${visitorId}`)
+      .limit(1)
     );
     
-    if (blockedRes.data) {
-      const blockedData = blockedRes.data as { expires_at?: string };
-      if (!blockedData.expires_at || new Date(blockedData.expires_at) > new Date()) {
-        return NextResponse.json({ success: false, error: 'Access Denied' }, { status: 403 });
-      }
+    if (blockedRes.data && (blockedRes.data as any[]).length > 0) {
+      return NextResponse.json({ success: false, error: 'Access Denied' }, { status: 403 });
     }
 
     // 2. Upsert Visitor
@@ -148,13 +145,22 @@ export async function POST(request: Request) {
       device_type = 'Mobile';
     }
 
+    const publicIp = isLocal ? '127.0.0.1' : ip;
+    const screen_res = screen_width ? `${screen_width}x${screen_height}` : 'unknown';
+    
+    // Hash for fingerprint
+    const crypto = require('crypto');
+    const fingerprintString = `${publicIp}-${browser}-${os}-${screen_res}-${timezone}-${language}`;
+    const deviceFingerprint = crypto.createHash('sha256').update(fingerprintString).digest('hex');
+    
     const visitorPayload = {
       browser: browser || 'unknown',
       browser_version: browser_version,
       device_type: device_type,
       os: os || 'unknown',
       os_version: os_version,
-      public_ip: isLocal ? '127.0.0.1' : ip,
+      public_ip: publicIp,
+      ip_address: publicIp,
       environment,
       referrer,
       screen_width,
@@ -175,11 +181,20 @@ export async function POST(request: Request) {
       utm_medium: utm_medium || null,
       utm_campaign: utm_campaign || null,
       last_visit: new Date().toISOString(),
+      cookie_id: visitorId,
+      screen_resolution: screen_res,
+      device_fingerprint: deviceFingerprint,
+      platform: body.platform || null,
+      color_depth: body.color_depth || null,
+      asn: asn || null,
+      manufacturer: (browser === 'Safari' || os === 'iOS' || os === 'macOS') ? 'Apple' : (browser === 'Chrome' && os === 'Android' ? 'Google/Android' : (os === 'Windows' ? 'PC' : null))
     };
 
     if (!visitorRes.data) {
+      const generatedName = `VIS-${visitorId.substring(0, 6).toUpperCase()}`;
       const { error } = await supabase.from('portfolio_visitors').insert({
         visitor_id: visitorId,
+        visitor_name: generatedName,
         ...visitorPayload,
         total_visits: 1,
         returning_visitor: false
@@ -199,7 +214,7 @@ export async function POST(request: Request) {
         const p_res = await supabase.from('portfolio_sessions').select('last_ping_at').eq('session_id', sessionId).single();
         if (p_res.data?.last_ping_at) {
           const dt = Math.floor((new Date().getTime() - new Date(p_res.data.last_ping_at).getTime()) / 1000);
-          if (dt <= 30 && dt > 0) {
+          if (dt <= 30 * 60 && dt > 0) {
              updates.total_time_spent = (visitorData.total_time_spent || 0) + dt;
           }
         }
@@ -209,20 +224,7 @@ export async function POST(request: Request) {
       if (error) console.error('[Telemetry] Visitor Update Error:', error);
     }
 
-    // Phase 5: Prevent Duplicate Inserts
     const activeSession = await findActiveVisitorSession(visitorId);
-
-    const deviceSnapshot = {
-      browser,
-      browser_version,
-      os,
-      os_version,
-      device_type,
-      screen: `${screen_width}x${screen_height}`,
-      language,
-      timezone,
-      location: [city, region, country].filter(Boolean).join(', ') || 'Unknown'
-    };
 
     if (activeSession) {
       // YES -> UPDATE
@@ -236,10 +238,24 @@ export async function POST(request: Request) {
         await createVisitorSession({
           session_id: sessionId,
           visitor_id: visitorId,
+          cookie_id: visitorId,
+          browser,
+          browser_version,
+          os,
+          device_type,
+          screen_resolution: `${screen_width}x${screen_height}`,
+          timezone,
+          language,
+          ip_address: publicIp,
+          country,
+          region,
+          city,
+          isp,
+          user_agent: userAgent,
           entry_page: path || '/',
           exit_page: path || '/',
+          landing_page: path || '/',
           referrer: referrer,
-          device_snapshot: deviceSnapshot,
           page_view_count: 1,
           utm_source: utm_source,
           utm_medium: utm_medium,

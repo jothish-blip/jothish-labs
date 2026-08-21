@@ -50,14 +50,13 @@ export async function GET(
 
     // Check if blocked
     let isBlocked = false;
-    if (visitor.public_ip) {
-      const { data: blockedIp } = await supabase
-        .from('portfolio_blocked_ips')
-        .select('id')
-        .eq('ip_address', visitor.public_ip)
-        .single();
-      isBlocked = !!blockedIp;
-    }
+    const { data: blockedRecord } = await supabase
+      .from('portfolio_blocked_visitors')
+      .select('id')
+      .or(`ip_address.eq.${visitor.public_ip || visitor.ip_address || ''},visitor_id.eq.${visitorId}`)
+      .limit(1);
+      
+    isBlocked = !!blockedRecord && blockedRecord.length > 0;
 
     return NextResponse.json({
       visitor,

@@ -29,6 +29,12 @@ type Visitor = {
   screen_width: number;
   screen_height: number;
   referrer: string;
+  visitor_name?: string;
+  cookie_consent?: boolean;
+  policy_accepted?: boolean;
+  accepted_at?: string;
+  policy_version?: string;
+  cookie_version?: string;
 };
 
 type Props = {
@@ -40,8 +46,13 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedVisitor, setSelectedVisitor] = useState<Visitor | null>(null);
   const [visitors, setVisitors] = useState<Visitor[]>(initialVisitors);
+  const [mounted, setMounted] = useState(false);
   const supabaseRef = useRef(createClient());
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const supabase = supabaseRef.current;
@@ -103,8 +114,16 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
     v.visitor_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (v.browser && v.browser.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (v.public_ip && v.public_ip.includes(searchTerm)) ||
-    (v.city && v.city.toLowerCase().includes(searchTerm.toLowerCase()))
+    (v.city && v.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (v.visitor_name && v.visitor_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (v.device_type && v.device_type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (v.country && v.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (v.os && v.os.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
+  const paginatedVisitors = filteredVisitors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="space-y-8">
@@ -133,18 +152,45 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
               placeholder="Search visitors by ID, IP, User Agent, Location..." 
               className="w-full bg-surface/10 border border-surface rounded-sm pl-9 pr-4 py-3 text-xs font-mono focus:outline-none focus:border-surface-strong text-foreground transition-colors"
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={e => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
             />
+          </div>
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center bg-surface/5 px-4 py-3 border border-surface rounded-sm mb-4">
+            <span className="text-[10px] text-muted font-mono uppercase tracking-widest">
+              Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredVisitors.length)} of {filteredVisitors.length}
+            </span>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-2 py-1 bg-surface/30 text-muted hover:text-foreground rounded-sm text-[10px] uppercase font-mono disabled:opacity-50 transition-colors"
+              >
+                Prev
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredVisitors.length / itemsPerPage), p + 1))}
+                disabled={currentPage >= Math.ceil(filteredVisitors.length / itemsPerPage)}
+                className="px-2 py-1 bg-surface/30 text-muted hover:text-foreground rounded-sm text-[10px] uppercase font-mono disabled:opacity-50 transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
 
           <div className="bg-surface/5 border border-surface rounded-sm overflow-hidden overflow-x-auto">
             <table className="w-full text-left font-mono text-xs whitespace-nowrap">
               <thead className="bg-surface/30 text-[10px] uppercase tracking-[0.2em] text-muted border-b border-surface">
                 <tr>
+                  <th className="px-4 py-3 font-normal">SR. NO</th>
                   <th className="px-4 py-3 font-normal">Status</th>
-                  <th className="px-4 py-3 font-normal">Visitor ID</th>
+                  <th className="px-4 py-3 font-normal">Visitor / Name</th>
                   <th className="px-4 py-3 font-normal">IP & ISP</th>
                   <th className="px-4 py-3 font-normal">Location</th>
+                  <th className="px-4 py-3 font-normal">Consent</th>
                   <th className="px-4 py-3 font-normal">Environment</th>
                   <th className="px-4 py-3 font-normal text-right">Sessions</th>
                   <th className="px-4 py-3 font-normal text-right">Time Spent</th>
@@ -153,11 +199,13 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface">
-                {filteredVisitors.length > 0 ? (
-                  filteredVisitors.map((v) => {
-                    const isOnline = new Date().getTime() - new Date(v.last_visit).getTime() < 60 * 1000;
+                {paginatedVisitors.length > 0 ? (
+                  paginatedVisitors.map((v, index) => {
+                    const srNo = (currentPage - 1) * itemsPerPage + index + 1;
+                    const isOnline = mounted && new Date().getTime() - new Date(v.last_visit).getTime() < 30 * 60 * 1000;
                     return (
                     <tr key={v.id} onClick={() => setSelectedVisitor(v)} className="hover:bg-surface/10 transition-colors cursor-pointer group">
+                      <td className="px-4 py-3 text-muted">{srNo}</td>
                       <td className="px-4 py-3">
                         {isOnline ? (
                           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
@@ -166,9 +214,12 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
                         )}
                       </td>
                       <td className="px-4 py-3 text-muted group-hover:text-foreground transition-colors">
-                        <span className="flex items-center gap-2">
-                          <Crosshair size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                          <span title={v.visitor_id}>{v.visitor_id.substring(0, 8)}...</span>
+                        <span className="flex flex-col gap-0.5">
+                          <span className="text-foreground font-medium">{v.visitor_name && v.visitor_name !== 'Anonymous' ? v.visitor_name : `VIS-${v.visitor_id.substring(0, 6).toUpperCase()}`}</span>
+                          <span className="flex items-center gap-1 text-[10px] opacity-70">
+                            <Crosshair size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <span title={v.visitor_id}>{v.visitor_id.substring(0, 8)}...</span>
+                          </span>
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -181,6 +232,20 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
                         <div className="flex flex-col">
                           <span className="text-foreground truncate max-w-[120px]" title={v.city ? `${v.city}, ${v.country}` : v.country}>{v.city ? `${v.city}, ` : ''}{v.country || 'Unknown'}</span>
                           <span className="text-[9px] text-muted">{v.timezone}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col gap-0.5">
+                          {v.policy_accepted ? (
+                            <span className="text-emerald-500 font-medium">Accepted</span>
+                          ) : (
+                            <span className="text-amber-500/70">Not Provided</span>
+                          )}
+                          {v.policy_accepted && (
+                            <span className="text-[9px] text-muted">
+                              v{v.policy_version} • {v.accepted_at ? format(new Date(v.accepted_at), 'dd MMM yyyy') : ''}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -207,14 +272,14 @@ export default function VisitorsClient({ visitors: initialVisitors, recentSessio
                         {format(new Date(v.first_visit), 'MMM d, yyyy')}
                       </td>
                       <td className="px-4 py-3 text-muted">
-                        {formatDistanceToNow(new Date(v.last_visit), { addSuffix: true })}
+                        {mounted ? formatDistanceToNow(new Date(v.last_visit), { addSuffix: true }) : format(new Date(v.last_visit), 'MMM d, yyyy')}
                       </td>
                     </tr>
                     );
                   })
                 ) : (
                   <tr>
-                    <td colSpan={9} className="px-6 py-12 text-center text-muted uppercase tracking-widest text-[10px]">No visitor telemetry matches your query.</td>
+                    <td colSpan={10} className="px-6 py-12 text-center text-muted uppercase tracking-widest text-[10px]">No visitor telemetry matches your query.</td>
                   </tr>
                 )}
               </tbody>

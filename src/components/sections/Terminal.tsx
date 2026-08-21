@@ -365,7 +365,14 @@ export default function Terminal() {
             <div className="relative flex flex-col bg-surface/30 border-b border-surface z-30 shrink-0">
               <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-2 z-20">
-                  <button onClick={(e) => { e.stopPropagation(); setIsClosed(true); }} className="w-3 h-3 rounded-full bg-red-500/80 flex items-center justify-center hover:bg-red-500 transition-colors">
+                  <button onClick={(e) => { 
+                    e.stopPropagation(); 
+                    setIsClosed(true); 
+                    // Reset any active contact wizard so it doesn't bleed into the next open
+                    state.contactSession.active = false;
+                    state.contactSession.step = "name";
+                    state.contactSession.data = { name: "", email: "", message: "" };
+                  }} className="w-3 h-3 rounded-full bg-red-500/80 flex items-center justify-center hover:bg-red-500 transition-colors">
                     <X size={8} className="text-white opacity-0 hover:opacity-100 transition-opacity" />
                   </button>
                   <button onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }} className="w-3 h-3 rounded-full bg-amber-500/80 flex items-center justify-center hover:bg-amber-500 transition-colors">
