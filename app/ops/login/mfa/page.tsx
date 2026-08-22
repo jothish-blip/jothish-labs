@@ -18,6 +18,15 @@ export default function OpsMfaPage() {
   const [totpUri, setTotpUri] = useState<string | null>(null);
 
   useEffect(() => {
+    let devId = localStorage.getItem('ops_device_id');
+    if (!devId) {
+      devId = typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('ops_device_id', devId);
+    }
+    document.cookie = `ops_device_id=${devId}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+
     async function init() {
       const status = await checkMfaStatus();
       if (status.error) {

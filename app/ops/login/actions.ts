@@ -2,78 +2,7 @@
 
 import { createClient, createAdminClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
-
-function parseUserAgentDetailed(ua: string) {
-  let browser = 'Unknown';
-  let browser_version = 'Unknown';
-  let os = 'Unknown';
-  let os_version = 'Unknown';
-  let device = 'Desktop';
-
-  if (ua.includes('Firefox')) {
-    browser = 'Firefox';
-    browser_version = ua.match(/Firefox\/([\d.]+)/)?.[1] || 'Unknown';
-  } else if (ua.includes('Edg')) {
-    browser = 'Edge';
-    browser_version = ua.match(/Edg\/([\d.]+)/)?.[1] || 'Unknown';
-  } else if (ua.includes('Chrome')) {
-    browser = 'Chrome';
-    browser_version = ua.match(/Chrome\/([\d.]+)/)?.[1] || 'Unknown';
-  } else if (ua.includes('Safari') && !ua.includes('Chrome')) {
-    browser = 'Safari';
-    browser_version = ua.match(/Version\/([\d.]+)/)?.[1] || 'Unknown';
-  }
-
-  if (ua.includes('Windows NT 10.0')) { os = 'Windows'; os_version = '10/11'; }
-  else if (ua.includes('Windows NT 6.3')) { os = 'Windows'; os_version = '8.1'; }
-  else if (ua.includes('Windows NT 6.2')) { os = 'Windows'; os_version = '8'; }
-  else if (ua.includes('Windows NT 6.1')) { os = 'Windows'; os_version = '7'; }
-  else if (ua.includes('Mac OS X')) { 
-    os = 'macOS'; 
-    os_version = ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g, '.') || 'Unknown'; 
-  }
-  else if (ua.includes('Android')) {
-    os = 'Android';
-    os_version = ua.match(/Android ([\d.]+)/)?.[1] || 'Unknown';
-    device = 'Mobile';
-  }
-  else if (ua.includes('iPhone OS') || ua.includes('iPad; CPU OS')) {
-    os = 'iOS';
-    os_version = ua.match(/OS ([\d_]+)/)?.[1]?.replace(/_/g, '.') || 'Unknown';
-    device = 'Mobile';
-  }
-  else if (ua.includes('Linux')) { os = 'Linux'; }
-
-  return { browser, browser_version, os, os_version, device };
-}
-
-async function getClientContext() {
-  const headersList = await headers();
-  const ua = headersList.get('user-agent') || 'Unknown';
-  const { browser, browser_version, os, os_version, device } = parseUserAgentDetailed(ua);
-  
-  const city = headersList.get('x-vercel-ip-city') || '';
-  const region = headersList.get('x-vercel-ip-country-region') || '';
-  const country = headersList.get('x-vercel-ip-country') || '';
-  const locationParts = [city, region, country].filter(Boolean);
-  const location = locationParts.length > 0 ? locationParts.join(', ') : 'Unknown';
-
-  return {
-    ip: headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || headersList.get('x-real-ip') || 'Local Development',
-    userAgent: ua,
-    browser,
-    browser_version,
-    os,
-    os_version,
-    device,
-    location,
-    city: city || 'Unknown',
-    region: region || 'Unknown',
-    country: country || 'Unknown',
-    timezone: headersList.get('x-vercel-timezone') || 'Unknown'
-  };
-}
+import { getClientContext } from '@/utils/server-context';
 
 const safeAuditInsert = async (supabaseAdmin: Awaited<ReturnType<typeof createAdminClient>>, payload: Record<string, unknown>) => {
   try {
@@ -183,10 +112,16 @@ export async function login(formData: FormData) {
   });
 
   const cookieStore = await import('next/headers').then(m => m.cookies());
-  const existingSid = cookieStore.get('admin_sid')?.value;
-  if (existingSid && adminId) {
-    const { expireAdmin } = await import('@/lib/session-service');
-    await expireAdmin(existingSid, adminId);
+  let deviceId = cookieStore.get('ops_device_id')?.value;
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    cookieStore.set('ops_device_id', deviceId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60,
+    });
   }
 
   const sessionToken = crypto.randomUUID();
@@ -196,6 +131,7 @@ export async function login(formData: FormData) {
     await createAdminSession({
       admin_id: adminId,
       session_token: sessionToken,
+      device_id: deviceId,
       ip_address: context.ip,
       country: context.country,
       browser: context.browser,
@@ -205,7 +141,6 @@ export async function login(formData: FormData) {
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     });
     
-    const cookieStore = await import('next/headers').then(m => m.cookies());
     cookieStore.set('admin_sid', sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

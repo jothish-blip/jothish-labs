@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from './actions';
 import { ShieldCheck, Loader2 } from 'lucide-react';
@@ -9,6 +9,17 @@ export default function OpsAuthPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let devId = localStorage.getItem('ops_device_id');
+    if (!devId) {
+      devId = typeof crypto !== 'undefined' && crypto.randomUUID 
+        ? crypto.randomUUID() 
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('ops_device_id', devId);
+    }
+    document.cookie = `ops_device_id=${devId}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax; Secure`;
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
