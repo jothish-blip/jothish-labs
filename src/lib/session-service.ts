@@ -43,6 +43,17 @@ export async function expireAdmin(sessionId: string, adminId: string) {
   if (error) console.error('[session-service] expireAdmin:', error);
 }
 
+export async function expireAllAdmins(adminId: string) {
+  const supabase = await createAdminClient();
+  const { error } = await supabase
+    .from('portfolio_admin_sessions')
+    .update({ status: 'EXPIRED', is_revoked: true, expires_at: new Date().toISOString() })
+    .eq('admin_id', adminId)
+    .in('status', ['ACTIVE', 'IDLE', 'CREATED']);
+    
+  if (error) console.error('[session-service] expireAllAdmins:', error);
+}
+
 export async function sweepExpiredSessions() {
   const supabase = await createAdminClient();
   const now = Date.now();

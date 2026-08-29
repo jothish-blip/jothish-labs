@@ -86,6 +86,20 @@ export async function verifyMfa(formData: FormData) {
 
   const context = await getClientContext();
 
+  // Retrieve or generate Device ID from cookies
+  const cookieStore = await import('next/headers').then(m => m.cookies());
+  let deviceId = cookieStore.get('ops_device_id')?.value;
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    cookieStore.set('ops_device_id', deviceId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60,
+    });
+  }
+
   const factors = await supabase.auth.mfa.listFactors();
   const enrollment = factors.data?.all ?? [];
   
@@ -115,6 +129,16 @@ export async function verifyMfa(formData: FormData) {
   });
 
   if (verification.error) {
+    const { recordLoginAttempt } = await import('@/lib/security-service');
+    await recordLoginAttempt({
+      email: user.email || 'unknown',
+      adminId: user.id,
+      status: 'FAILED',
+      failureReason: verification.error.message,
+      context,
+      deviceId: deviceId || 'unknown'
+    });
+
     await safeAuditInsert(supabaseAdmin, {
       admin_id: user.id,
       actor: user.email || 'unknown',
@@ -130,19 +154,6 @@ export async function verifyMfa(formData: FormData) {
   }
 
   // Insert session
-  const cookieStore = await import('next/headers').then(m => m.cookies());
-  let deviceId = cookieStore.get('ops_device_id')?.value;
-  if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    cookieStore.set('ops_device_id', deviceId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 365 * 24 * 60 * 60,
-    });
-  }
-
   const sessionToken = crypto.randomUUID();
   const { createAdminSession } = await import('@/lib/session-service');
   
@@ -152,11 +163,24 @@ export async function verifyMfa(formData: FormData) {
     device_id: deviceId,
     ip_address: context.ip,
     country: context.country,
+    city: context.city,
+    region: context.region,
+    isp: context.isp || 'Unknown ISP',
     browser: context.browser,
     device: context.device,
     os: context.os,
+    user_agent: context.userAgent,
     current_page: '/ops',
     expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  });
+
+  const { recordLoginAttempt: recordSuccess } = await import('@/lib/security-service');
+  await recordSuccess({
+    email: user.email || 'unknown',
+    adminId: user.id,
+    status: 'SUCCESS',
+    context,
+    deviceId
   });
 
   await safeAuditInsert(supabaseAdmin, {

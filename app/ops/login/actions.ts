@@ -22,34 +22,40 @@ export async function login(formData: FormData) {
   const supabaseAdmin = await createAdminClient();
   const context = await getClientContext();
 
-  const fifteenMinsAgo = new Date(Date.now() - 15 * 60000).toISOString();
-  
-  // Rate limiting logic based on IP and Email
-  const { data: recentFailures } = await supabaseAdmin
-    .from('portfolio_audit_logs')
-    .select('id')
-    .eq('action', 'FAILED_LOGIN')
-    .filter('details->>email', 'eq', email)
-    .gte('created_at', fifteenMinsAgo);
+  // 1. IP Check (Manual block & rate limit block)
+  const { checkIpAllowed, checkAdminLocked, recordLoginAttempt } = await import('@/lib/security-service');
+  const ipCheck = await checkIpAllowed(context.ip);
+  if (!ipCheck.allowed) {
+    return { error: ipCheck.reason || 'Access denied from this IP address.' };
+  }
 
-  if (recentFailures && recentFailures.length >= 5) {
-    await safeAuditInsert(supabaseAdmin, {
-      admin_id: null,
-      actor: email || 'unknown',
-      action: 'ACCOUNT_LOCKOUT',
-      resource_type: 'auth',
-      ip_address: context.ip,
-      location: context.location,
-      browser: context.browser,
-      os: context.os,
-      details: { ...context, email, reason: 'Too many failed attempts' }
+  // 2. Cookie Store for Device ID
+  const cookieStore = await import('next/headers').then(m => m.cookies());
+  let deviceId = cookieStore.get('ops_device_id')?.value;
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    cookieStore.set('ops_device_id', deviceId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 365 * 24 * 60 * 60,
     });
-    return { error: 'Account temporarily locked due to too many failed attempts. Try again later.' };
   }
 
   const { error, data } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
+    // Record failed login attempt
+    await recordLoginAttempt({
+      email,
+      adminId: null,
+      status: 'FAILED',
+      failureReason: error.message,
+      context,
+      deviceId
+    });
+
     await safeAuditInsert(supabaseAdmin, {
       admin_id: null,
       actor: email || 'unknown',
@@ -65,7 +71,17 @@ export async function login(formData: FormData) {
   }
 
   const adminId = data?.user?.id ?? null;
-  const { data: assurance, error: assuranceError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  // 3. Account Lock check
+  if (adminId) {
+    const lockCheck = await checkAdminLocked(adminId);
+    if (lockCheck.locked) {
+      await supabase.auth.signOut();
+      return { error: lockCheck.reason || 'This account is locked. Please contact support.' };
+    }
+  }
+
+  const { data: assurance } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
   // Check site-wide MFA setting
   const { data: settings } = await supabaseAdmin.from('portfolio_settings').select('value').eq('key', 'enforce_mfa').single();
@@ -80,7 +96,6 @@ export async function login(formData: FormData) {
       requiresMfa = true;
     }
   } else {
-    // If we can't determine assurance level, but MFA is enforced, require it.
     if (enforceMfa === 'strict') requiresMfa = true;
   }
 
@@ -99,6 +114,15 @@ export async function login(formData: FormData) {
     return { requiresMfa: true, email };
   }
 
+  // Login successful without MFA
+  await recordLoginAttempt({
+    email,
+    adminId,
+    status: 'SUCCESS',
+    context,
+    deviceId
+  });
+
   await safeAuditInsert(supabaseAdmin, {
     admin_id: adminId,
     actor: email || 'unknown',
@@ -111,19 +135,6 @@ export async function login(formData: FormData) {
     details: { ...context, email, userId: adminId }
   });
 
-  const cookieStore = await import('next/headers').then(m => m.cookies());
-  let deviceId = cookieStore.get('ops_device_id')?.value;
-  if (!deviceId) {
-    deviceId = crypto.randomUUID();
-    cookieStore.set('ops_device_id', deviceId, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 365 * 24 * 60 * 60,
-    });
-  }
-
   const sessionToken = crypto.randomUUID();
   
   if (adminId) {
@@ -134,9 +145,13 @@ export async function login(formData: FormData) {
       device_id: deviceId,
       ip_address: context.ip,
       country: context.country,
+      city: context.city,
+      region: context.region,
+      isp: context.isp || 'Unknown ISP',
       browser: context.browser,
       device: context.device,
       os: context.os,
+      user_agent: context.userAgent,
       current_page: '/ops',
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
     });

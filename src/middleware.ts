@@ -107,6 +107,19 @@ export async function middleware(request: NextRequest) {
     }
   );
 
+  // IP Block check
+  const { data: ipLimit } = await supabase
+    .from('portfolio_rate_limits')
+    .select('is_blocked, blocked_until')
+    .eq('ip_address', ip)
+    .maybeSingle();
+
+  if (ipLimit) {
+    if (ipLimit.is_blocked || (ipLimit.blocked_until && new Date(ipLimit.blocked_until) > new Date())) {
+      return new NextResponse('Access Denied: Your IP address has been blocked.', { status: 403 });
+    }
+  }
+
   const { data: { user } } = await supabase.auth.getUser();
 
   const isOpsRoute = request.nextUrl.pathname.startsWith('/ops');

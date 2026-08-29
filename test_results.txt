@@ -27,3 +27,31 @@ Are they different? true
 === TEST 7: Close Browser 1, Wait 30m ===
 Browser 1 Status: EXPIRED
 Browser 2 Status: ACTIVE
+
+=== TEST 5: Admin Login ===
+Active admin sessions after first login: 1
+
+=== TEST 6: Second Browser Login ===
+Active admin sessions after second login: 2
+Simulating heartbeat for Browser 2...
+Browser 1 expires_at: 2026-08-22T19:50:37.248+00:00
+Browser 2 expires_at: 2026-08-22T19:50:38.232+00:00
+Are they different? true
+
+=== TEST 7: Close Browser 1, Wait 30m ===
+Browser 1 Status: EXPIRED
+Browser 2 Status: ACTIVE
+
+=== TEST 5: Admin Login ===
+Active admin sessions after first login: 1
+
+=== TEST 6: Second Browser Login ===
+Active admin sessions after second login: 2
+Simulating heartbeat for Browser 2...
+Browser 1 expires_at: 2026-08-22T20:17:56.881+00:00
+Browser 2 expires_at: 2026-08-22T20:17:57.671+00:00
+Are they different? true
+
+=== TEST 7: Close Browser 1, Wait 30m ===
+Browser 1 Status: EXPIRED
+Browser 2 Status: ACTIVE

@@ -67,6 +67,7 @@ export async function getClientContext() {
     city: city || 'Unknown',
     region: region || 'Unknown',
     country: country || 'Unknown',
-    timezone: headersList.get('x-vercel-timezone') || 'Unknown'
+    timezone: headersList.get('x-vercel-timezone') || 'Unknown',
+    isp: headersList.get('x-vercel-ip-as-organization') || 'Unknown ISP'
   };
 }
